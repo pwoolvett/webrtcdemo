@@ -1,11 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+""""""
+import argparse
+import asyncio
+from functools import wraps
+import json
+import os
 import random
 import ssl
-import websockets
-import asyncio
-import os
 import sys
-import json
-import argparse
+import time
 
 import gi
 gi.require_version('Gst', '1.0')
@@ -14,29 +18,83 @@ gi.require_version('GstWebRTC', '1.0')
 from gi.repository import GstWebRTC
 gi.require_version('GstSdp', '1.0')
 from gi.repository import GstSdp
+import websockets
+from websockets.version import version as wsv
+from websockets.uri import parse_uri
 
 PIPELINE_DESC = '''
-webrtcbin name=sendrecv bundle-policy=max-bundle stun-server=stun://stun.l.google.com:19302
- videotestsrc is-live=true pattern=ball ! videoconvert ! queue ! vp8enc deadline=1 ! rtpvp8pay !
- queue ! application/x-rtp,media=video,encoding-name=VP8,payload=97 ! sendrecv.
- audiotestsrc is-live=true wave=red-noise ! audioconvert ! audioresample ! queue ! opusenc ! rtpopuspay !
- queue ! application/x-rtp,media=audio,encoding-name=OPUS,payload=96 ! sendrecv.
+webrtcbin
+  name=sendrecv
+  bundle-policy=max-bundle
+  stun-server=stun://stun.l.google.com:19302
+
+videotestsrc
+  is-live=true
+  pattern=ball
+! videoconvert
+! queue
+! vp8enc
+  deadline=1
+! rtpvp8pay
+! queue 
+! application/x-rtp,media=video,encoding-name=VP8,payload=97
+! sendrecv.
+
+audiotestsrc
+  is-live=true
+  wave=red-noise
+! audioconvert
+! audioresample
+! queue
+! opusenc
+! rtpopuspay
+! queue
+! application/x-rtp,media=audio,encoding-name=OPUS,payload=96
+! sendrecv.
 '''
 
-from websockets.version import version as wsv
+
+def traced(func):
+
+    @wraps(func)
+    def wrapper(*a, **kw):
+        print(f'CALL: {func.__qualname__}(*{a},**{kw})')
+        ret = func(*a, **kw)
+        print(f'EXIT: {func.__qualname__} -> {ret}')
+        return ret
+    return wrapper
+
+def traced_async(func):
+
+    @wraps(func)
+    async def wrapper(*a, **kw):
+        print(f'CALL: {func.__qualname__}(*{a},**{kw})')
+        ret = await func(*a, **kw)
+        print(f'EXIT: {func.__qualname__} -> {ret}')
+        return ret
+    return wrapper
 
 class WebRTCClient:
+    @traced
     def __init__(self, id_, peer_id, server):
         self.id_ = id_
         self.conn = None
         self.pipe = None
         self.webrtc = None
         self.peer_id = peer_id
+        if not server:
+            raise ValueError
         self.server = server or 'wss://webrtc.nirbheek.in:8443'
+        # self.server = 'wss://webrtc.nirbheek.in:8443'
 
 
+    @traced_async
     async def connect(self):
-        sslctx = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        wsuri = traced(parse_uri)(self.server)
+        if wsuri.secure:
+            sslctx = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        else:
+            sslctx = None
         self.conn = await websockets.connect(self.server, ssl=sslctx)
         await self.conn.send('HELLO %d' % self.id_)
 
@@ -54,7 +112,7 @@ class WebRTCClient:
     def on_offer_created(self, promise, _, __):
         promise.wait()
         reply = promise.get_reply()
-        offer = reply['offer']
+        offer = reply.get_value('offer')
         promise = Gst.Promise.new()
         self.webrtc.emit('set-local-description', offer, promise)
         promise.interrupt()
@@ -175,7 +233,18 @@ def check_plugins():
     return True
 
 
-if __name__=='__main__':
+def main(args):
+
+    our_id = random.randrange(10, 10000)
+    c = WebRTCClient(our_id, args.peerid, args.server)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(c.connect())
+    res = loop.run_until_complete(c.loop())
+
+    sys.exit(res)
+
+def main_retry():
     Gst.init(None)
     if not check_plugins():
         sys.exit(1)
@@ -183,9 +252,9 @@ if __name__=='__main__':
     parser.add_argument('peerid', help='String ID of the peer to connect to')
     parser.add_argument('--server', help='Signalling server to connect to, eg "wss://127.0.0.1:8443"')
     args = parser.parse_args()
-    our_id = random.randrange(10, 10000)
-    c = WebRTCClient(our_id, args.peerid, args.server)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(c.connect())
-    res = loop.run_until_complete(c.loop())
-    sys.exit(res)
+    print("Waiting a few seconds for you to open the browser at localhost:8080")
+    time.sleep(10)
+    main(args)
+
+if __name__=='__main__':
+    main_retry()
