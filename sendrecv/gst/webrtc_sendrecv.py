@@ -23,14 +23,17 @@ from websockets.version import version as wsv
 from websockets.uri import parse_uri
 
 PIPELINE_DESC = '''
-webrtcbin
-  name=sendrecv
-  bundle-policy=max-bundle
-  stun-server=stun://stun.l.google.com:19302
-
 videotestsrc
   is-live=true
   pattern=ball
+! timeoverlay
+  font-desc="Sans, 36"
+  halignment=center
+  valignment=center
+! tee
+  name=t
+
+t.
 ! videoconvert
 ! queue
 ! vp8enc
@@ -38,20 +41,16 @@ videotestsrc
 ! rtpvp8pay
 ! queue 
 ! application/x-rtp,media=video,encoding-name=VP8,payload=97
-! sendrecv.
-
-audiotestsrc
-  is-live=true
-  wave=red-noise
-! audioconvert
-! audioresample
-! queue
-! opusenc
-! rtpopuspay
-! queue
-! application/x-rtp,media=audio,encoding-name=OPUS,payload=96
-! sendrecv.
+! webrtcbin
+  name=sendrecv
+  bundle-policy=max-bundle
+  stun-server=stun://stun.l.google.com:19302
 '''
+# t.
+# ! queue
+# ! videoconvert
+# ! xvimagesink
+# '''
 
 
 def traced(func):

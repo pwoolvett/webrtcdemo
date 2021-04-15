@@ -16,7 +16,7 @@ var default_peer_id;
 var rtc_configuration = {iceServers: [{urls: "stun:stun.services.mozilla.com"},
                                       {urls: "stun:stun.l.google.com:19302"}]};
 // The default constraints that will be attempted. Can be overriden by the user.
-var default_constraints = {video: true, audio: true};
+var default_constraints = {};//{video: true, audio: true};
 
 var connect_attempts = 0;
 var peer_connection;
@@ -45,17 +45,17 @@ function getVideoElement() {
 
 function setStatus(text) {
     console.log(text);
-    var span = document.getElementById("status")
-    // Don't set the status if it already contains an error
-    if (!span.classList.contains('error'))
-        span.textContent = text;
+    // var span = document.getElementById("status")
+    // // Don't set the status if it already contains an error
+    // if (!span.classList.contains('error'))
+    //     span.textContent = text;
 }
 
 function setError(text) {
     console.error(text);
-    var span = document.getElementById("status")
-    span.textContent = text;
-    span.classList.add('error');
+    // var span = document.getElementById("status")
+    // span.textContent = text;
+    // span.classList.add('error');
 }
 
 function resetVideo() {
@@ -173,20 +173,21 @@ function onServerError(event) {
 }
 
 function getLocalStream() {
-    var constraints;
-    var textarea = document.getElementById('constraints');
-    try {
-        constraints = JSON.parse(textarea.value);
-    } catch (e) {
-        console.error(e);
-        setError('ERROR parsing constraints: ' + e.message + ', using default constraints');
-        constraints = default_constraints;
-    }
-    console.log(JSON.stringify(constraints));
+    // var constraints;
+    // var textarea = document.getElementById('constraints');
+    // try {
+    //     constraints = JSON.parse(textarea.value);
+    // } catch (e) {
+    //     console.error(e);
+    //     setError('ERROR parsing constraints: ' + e.message + ', using default constraints');
+    //     constraints = default_constraints;
+    // }
+    // constraints = default_constraints;
+    // console.log(JSON.stringify(constraints));
 
     // Add local stream
     if (navigator.mediaDevices.getUserMedia) {
-        return navigator.mediaDevices.getUserMedia(constraints);
+        return navigator.mediaDevices.getUserMedia(default_constraints);
     } else {
         errorUserMediaHandler();
     }
@@ -199,13 +200,13 @@ function websocketServerConnect() {
         return;
     }
     // Clear errors in the status span
-    var span = document.getElementById("status");
-    span.classList.remove('error');
-    span.textContent = '';
+    // var span = document.getElementById("status");
+    // span.classList.remove('error');
+    // span.textContent = '';
     // Populate constraints
-    var textarea = document.getElementById('constraints');
-    if (textarea.value == '')
-        textarea.value = JSON.stringify(default_constraints);
+    // var textarea = document.getElementById('constraints');
+    // if (textarea.value == '')
+    //     textarea.value = JSON.stringify(default_constraints);
     // Fetch the peer id to use
     peer_id = default_peer_id || getOurId();
     ws_port = ws_port || '8443';
@@ -221,7 +222,8 @@ function websocketServerConnect() {
     ws_conn = new WebSocket(ws_url);
     /* When connected, immediately register with the server */
     ws_conn.addEventListener('open', (event) => {
-        document.getElementById("peer-id").textContent = peer_id;
+        // document.getElementById("peer-id").textContent = peer_id;
+        console.log(`Our peer id: ${peer_id}`)
         ws_conn.send('HELLO ' + peer_id);
         setStatus("Registering with server");
     });

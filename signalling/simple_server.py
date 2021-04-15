@@ -271,11 +271,17 @@ class WebRTCSimpleServer(object):
 
         print("Listening on https://{}:{}".format(self.addr, self.port))
         # Websocket server
-        wsd = websockets.serve(handler, self.addr, self.port, ssl=sslctx, process_request=self.health_check if self.health_path else None,
-                               # Maximum number of messages that websockets will pop
-                               # off the asyncio and OS buffers per connection. See:
-                               # https://websockets.readthedocs.io/en/stable/api.html#websockets.protocol.WebSocketCommonProtocol
-                               max_queue=16)
+        wsd = websockets.serve(
+            handler,
+            self.addr,
+            self.port,
+            ssl=sslctx,
+            process_request=self.health_check if self.health_path else None,
+            max_queue=16,   # Maximum number of messages that websockets
+                            # will pop off the asyncio and OS buffers per
+                            # connection.
+                            # See: https://websockets.readthedocs.io/en/stable/api.html#websockets.protocol.WebSocketCommonProtocol
+        )
 
         # Setup logging
         logger = logging.getLogger('websockets')
