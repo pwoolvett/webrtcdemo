@@ -5,8 +5,15 @@ services:
   sendrecv-gst:
     build: ./sendrecv/gst
 
-  sendrecv-js:
-    build: ./sendrecv/js
+  # sendrecv-js:
+  #   build: ./sendrecv/js
+  #   ports:
+  #     - 8080:80
+  #   depends_on:
+  #     - signalling
+
+  front:
+    build: ./sendrecv/front
     ports:
       - 8080:80
     depends_on:

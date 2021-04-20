@@ -37,7 +37,11 @@ COPY . /opt/
 #     --peer-id=1 \
 #     --server=ws://signalling:8443 \
 #     --disable-ssl
+ENV PYTHONUNBUFFERED=1
 
-CMD PYTHONUNBUFFERED=1 python3 webrtc_sendrecv.py \
-      --server=ws://signalling:8443 \
-      1
+ENTRYPOINT [ "python3", \
+  "webrtc_sendrecv.py", \
+  "--server=wss://signalling:8443", \
+  "1" \
+]
+CMD []

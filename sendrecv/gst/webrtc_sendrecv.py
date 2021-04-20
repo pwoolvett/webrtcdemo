@@ -234,7 +234,7 @@ def check_plugins():
 
 def main(args):
 
-    our_id = random.randrange(10, 10000)
+    our_id = 42  # random.randrange(10, 10000)
     c = WebRTCClient(our_id, args.peerid, args.server)
 
     loop = asyncio.get_event_loop()

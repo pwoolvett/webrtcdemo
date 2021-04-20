@@ -2,7 +2,9 @@ FROM python:3
 
 RUN pip3 install --user websockets
 
-WORKDIR /opt/
-COPY . /opt/
+WORKDIR /opt/signalling
+COPY . /opt/signalling
 
-CMD python -u ./simple_server.py --disable-ssl
+ENTRYPOINT [ "python","-u","./simple_server.py"]
+# ENTRYPOINT [ "python","-u","./simple_server.py","--disable-ssl" ]
+CMD ["--cert-path", "/opt/signalling"]
