@@ -7,20 +7,30 @@
 #  Author: Nirbheek Chauhan <nirbheek@centricular.com>
 #
 
-import os
-import sys
-import ssl
-import logging
-import asyncio
-import websockets
 import argparse
-import http
+import asyncio
 import concurrent
+import http
+import logging
+import os
+import ssl
+import sys
 
+import websockets
 
-class WebRTCSimpleServer(object):
-
-    def __init__(self, loop, options):
+class Streamer:
+    def __init__(
+        self,
+        *,
+        addr,
+        port,
+        keepalive_timeout,
+        cert_path,
+        disable_ssl,
+        health,
+        cert_restart,
+        loop=None
+    ):
         ############### Global data ###############
 
         # Format: {uid: (Peer WebSocketServerProtocol,
@@ -36,21 +46,46 @@ class WebRTCSimpleServer(object):
         self.rooms = dict()
 
         # Event loop
-        self.loop = loop
+        self.loop = loop or asyncio.get_event_loop()
         # Websocket Server Instance
         self.server = None
 
         # Options
-        self.addr = options.addr
-        self.port = options.port
-        self.keepalive_timeout = options.keepalive_timeout
-        self.cert_restart = options.cert_restart
-        self.cert_path = options.cert_path
-        self.disable_ssl = options.disable_ssl
-        self.health_path = options.health
+        self.addr = addr
+        self.port = port
+        self.keepalive_timeout = keepalive_timeout
+        self.cert_restart = cert_restart
+        self.cert_path = cert_path
+        self.disable_ssl = disable_ssl
+        self.health_path = health
 
         # Certificate mtime, used to detect when to restart the server
         self.cert_mtime = -1
+
+    @classmethod
+    def from_argv(cls):
+        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        # See: host, port in https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.create_server
+        parser.add_argument('--addr', default='', help='Address to listen on (default: all interfaces, both ipv4 and ipv6)')
+        parser.add_argument('--port', default=8443, type=int, help='Port to listen on')
+        parser.add_argument('--keepalive-timeout', dest='keepalive_timeout', default=30, type=int, help='Timeout for keepalive (in seconds)')
+        parser.add_argument('--cert-path', default=os.path.dirname(__file__))
+        parser.add_argument('--disable-ssl', default=False, help='Disable ssl', action='store_true')
+        parser.add_argument('--health', default='/health', help='Health check route')
+        parser.add_argument('--restart-on-cert-change', default=False, dest='cert_restart', action='store_true', help='Automatically restart if the SSL certificate changes')
+
+        options = parser.parse_args(sys.argv[1:])
+
+        streamer = cls(**vars(options))
+        return streamer
+
+    def run_forever(self):
+        print('Starting server...')
+        while True:
+            self.run()
+            self.loop.run_forever()
+            print('Restarting server...')
+        print("Goodbye!")
 
     ############### Helper functions ###############
 
@@ -324,28 +359,8 @@ class WebRTCSimpleServer(object):
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # See: host, port in https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.create_server
-    parser.add_argument('--addr', default='', help='Address to listen on (default: all interfaces, both ipv4 and ipv6)')
-    parser.add_argument('--port', default=8443, type=int, help='Port to listen on')
-    parser.add_argument('--keepalive-timeout', dest='keepalive_timeout', default=30, type=int, help='Timeout for keepalive (in seconds)')
-    parser.add_argument('--cert-path', default=os.path.dirname(__file__))
-    parser.add_argument('--disable-ssl', default=False, help='Disable ssl', action='store_true')
-    parser.add_argument('--health', default='/health', help='Health check route')
-    parser.add_argument('--restart-on-cert-change', default=False, dest='cert_restart', action='store_true', help='Automatically restart if the SSL certificate changes')
-
-    options = parser.parse_args(sys.argv[1:])
-
-    loop = asyncio.get_event_loop()
-
-    r = WebRTCSimpleServer(loop, options)
-
-    print('Starting server...')
-    while True:
-        r.run()
-        loop.run_forever()
-        print('Restarting server...')
-    print("Goodbye!")
+    streamer = Streamer.from_argv()
+    streamer.run_forever()
 
 if __name__ == "__main__":
     main()
