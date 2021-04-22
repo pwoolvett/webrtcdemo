@@ -209,7 +209,7 @@ function websocketServerConnect() {
     //     textarea.value = JSON.stringify(default_constraints);
     // Fetch the peer id to use
     peer_id = default_peer_id || getOurId();
-    ws_port = ws_port || '8443';
+    ws_port = ws_port || '9443';
     if (window.location.protocol.startsWith ("file")) {
         ws_server = ws_server || "127.0.0.1";
     } else if (window.location.protocol.startsWith ("http")) {

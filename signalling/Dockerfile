@@ -1,5 +1,4 @@
 FROM python:3
-
 RUN pip3 install --user websockets
 
 WORKDIR /opt/
