@@ -1,0 +1,4 @@
+
+pyds-ext==1.3.0
+PyGObject==3.40.1
+pythiags==0.9.0
