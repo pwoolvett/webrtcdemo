@@ -53,3 +53,5 @@ out/
 *.pem
 webrtc-sendrecv
 __pycache__
+front/.venv
+db/*
