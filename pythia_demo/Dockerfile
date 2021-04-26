@@ -27,5 +27,5 @@ ENV DISPLAY=:0
 
 WORKDIR /opt
 
-ENTRYPOINT ["pygst-launch","--file=pipeline.gstp","--obs=analytics","--ext=demo:MyCustomExtract","--proc=demo:MyCustomProcess"]
-CMD []
+ENTRYPOINT ["/bin/bash"]
+CMD ["run.sh"]
