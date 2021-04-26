@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import json
-
-import pyds
+import random
 
 from pythiags import frames_per_batch, objects_per_frame, Producer, Consumer
 from pythiags.deepstream.iterators import analytics_per_frame
@@ -10,10 +8,22 @@ from pythiags.deepstream.iterators import object_analytics_per_frame
 from pythiags.deepstream.iterators import analytics_per_object
 from pythiags.deepstream.parsers import detector_bbox
 
-from models import Detection
 from common import Session
+from dump import check_detection_importance
 from dump import register_detection
 from dump import register_frame
+from dump import register_event
+from dump import SELECTED_ROIS
+
+
+class VideoRecorder:
+    def __init__(self, *a, **kw):
+        self.ctr = 0
+
+    def record(self):
+        if random.randint(0,1):
+            self.ctr += random.randint(0,100)
+        return f"/tmp/videos/{self.ctr}.avi"
 
 
 class MyCustomExtract(Producer):
@@ -68,12 +78,12 @@ class MyCustomExtract(Producer):
 
 
 class DDBBWriterProcess(Consumer):
-    def __init__():
-        self.video_recorder = VideoRecorder(*a, **kw)
+    def __init__(self, ):
+        self.video_recorder = VideoRecorder()
         self.selected_rois = SELECTED_ROIS
         self.Session = Session
 
-    def dump_metadata(meta: dict, db_session):
+    def dump_metadata(self, meta: dict, db_session):
         for (source_id, frame_number), full_metadata in meta.items():
             frame_metadata = full_metadata["analytics"]
             detection_metadata = full_metadata["detections"]
@@ -83,8 +93,10 @@ class DDBBWriterProcess(Consumer):
             if not len(important_detections):
                 return
 
+            video_path = self.video_recorder.record()
+
             # Check if event has already been registered
-            event_id = register_event(detections)
+            event_id = register_event(video_path, event_type="Trespassing", db_session=db_session)
 
             registered_detections = []
             for detection in important_detections:
@@ -100,7 +112,9 @@ class DDBBWriterProcess(Consumer):
             db_session.add(registered_frame)
         db_session.commit()
 
+
     def filter_detections(self, detections: list) -> list:
+        # TODO use yield here instead
         important_detections = []
         for detection in detections:
             if not check_detection_importance(detection, self.selected_rois):
@@ -109,6 +123,5 @@ class DDBBWriterProcess(Consumer):
         return important_detections
 
     def incoming(self, events):
-        # This can be as slow as required
         session = self.Session()
-        dump_metadata(events, session)
+        self.dump_metadata(events, session)
