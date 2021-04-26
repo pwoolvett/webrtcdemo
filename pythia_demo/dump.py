@@ -6,58 +6,63 @@ from datetime import datetime
 from models import Detection
 from models import Event
 from models import Frame
-from models import Object
+from record import Recorder
+
+SELECTED_ROIS = {"RF"}
 
 
-def dump_metadata(meta:dict, db_session):
-    frames = []
-    for (source_id, frame_number), full_metadata in meta.items():
-        frame_metadata = full_metadata['analytics']
-        detection_metadata = full_metadata['detections']
-        detections = []
-        for detection in detection_metadata:
-            objects = []    
-            for obj in detection['objects']:
-                objects.append(Object(
-                    rois = str(obj['roiStatus']),
-                )
-                ) 
-            detections.append(
-                Detection(
-                label=detection["label"],
-                confidence=detection["confidence"],
-                x_min=detection["bbox"].x_min,
-                x_max=detection["bbox"].x_max,
-                y_min=detection["bbox"].y_min,
-                y_max=detection["bbox"].y_max,
-                objects = objects
-            )
-            )
-        event, object_count = check_event(frame_metadata)
-        frame = Frame(
-                object_count = object_count,
-                camera_id = source_id,
-                frame_number = frame_number,
-                detections = detections, 
-                )
-        db_session.add(frame)
-        frames.append(frame)
-        if event:
-            event_time = datetime.utcnow()
-            event = Event(
-                timestamp = event_time,
-                event_type = "Trespassing",
-                evidence_video_path = f"TBD_{event_time}",
-                frames = frame,
-            ) 
-            db_session.add(event)      
-    db_session.commit()
-    return frames
+def check_detection_importance(detection: dict, selected_rois: list) -> bool:
+    if detection["label"].lower() != "person":
+        return False
+    if len(detection["objects"]) < 1:
+        return False
+    for obj in detection["objects"]:
+        if any(x in selected_rois for x in obj["roiStatus"]):
+            return True
+    return False
 
-def check_event(frame_metadata):
-    object_count = sum(sum(frame_meta["objCnt"].values()) for frame_meta in frame_metadata)
-    has_event = sum(sum(frame_meta["objInROIcnt"].values()) for frame_meta in frame_metadata) > 0
-    return has_event, object_count
 
-if __name__=='__main__':
+def register_detection(detection, rois: dict, event_id: str) -> Detection:
+    return Detection(
+        label=detection["label"],
+        confidence=detection["confidence"],
+        x_min=detection["bbox"].x_min,
+        x_max=detection["bbox"].x_max,
+        y_min=detection["bbox"].y_min,
+        y_max=detection["bbox"].y_max,
+        tracked_object_id=str(detection["tracked_object_id"]),
+        rois=json.dumps(rois),
+        event_id=event_id,
+    )
+
+
+def register_frame(frame_metadata, source_id, frame_number, detections):
+    return Frame(
+        roi_object_count=json.dumps(
+            [frame_meta["objInROIcnt"] for frame_meta in frame_metadata]
+        ),
+        total_object_count=json.dumps(
+            [frame_meta["objCnt"] for frame_meta in frame_metadata]
+        ),
+        camera_id=source_id,
+        frame_number=frame_number,
+        detections=detections,
+    )
+
+
+def register_event(video_path: str, event_type: str):
+    event_id = Event.query(Event.id).filter(Event.VideoLocation == video_path).first()
+    if event_id:
+        return event_id
+    event = Event(
+        timestamp=datetime.utcnow(),
+        event_type=event_type,
+        evidence_video_path=video_path,
+    )
+    sess.add(event)
+    sess.commit()
+    return event.id
+
+
+if __name__ == "__main__":
     pass
