@@ -55,7 +55,6 @@ class Detection(Base):
 class Frame(Base):
     __tablename__ = "frame"
     id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, ForeignKey("event.id"), nullable=True)
     roi_object_count = Column(JSON, nullable=False)
     total_object_count = Column(JSON, nullable=False)
     camera_id = Column(Integer, nullable=False)
