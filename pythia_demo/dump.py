@@ -6,7 +6,6 @@ from datetime import datetime
 from models import Detection
 from models import Event
 from models import Frame
-from record import Recorder
 
 SELECTED_ROIS = {"RF"}
 
@@ -50,19 +49,24 @@ def register_frame(frame_metadata, source_id, frame_number, detections):
     )
 
 
-def register_event(video_path: str, event_type: str):
-    event_id = Event.query(Event.id).filter(Event.VideoLocation == video_path).first()
-    if event_id:
-        return event_id
-    event = Event(
-        timestamp=datetime.utcnow(),
-        event_type=event_type,
-        evidence_video_path=video_path,
-    )
-    sess.add(event)
-    sess.commit()
+def register_event(video_path: str, event_type: str, db_session):
+    event = db_session.query(
+        Event
+    ).filter(
+        Event.evidence_video_path == video_path
+    ).first()
+
+    if not event:
+        event = Event(
+            timestamp=datetime.utcnow(),
+            event_type=event_type,
+            evidence_video_path=video_path,
+        )
+        db_session.add(event)
+        db_session.commit()
+    
     return event.id
 
-
+    
 if __name__ == "__main__":
     pass
