@@ -96,7 +96,7 @@ class DDBBWriterProcess(Consumer):
             video_path = self.video_recorder.record()
 
             # Check if event has already been registered
-            event_id = register_event(video_path, event_type="Trespassing", db_session=db_session)
+            event_id = register_event(video_path, event_type="Trespassing", db_session=db_session, camera_id=source_id)
 
             registered_detections = []
             for detection in important_detections:
