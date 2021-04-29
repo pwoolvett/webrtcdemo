@@ -38,6 +38,10 @@ COPY . /opt/
 #     --server=ws://signalling:8443 \
 #     --disable-ssl
 
-CMD PYTHONUNBUFFERED=1 python3 webrtc_sendrecv.py \
-      --server=ws://signalling:8443 \
-      1
+ENV DISPLAY=:0
+
+CMD PYTHONUNBUFFERED=1 python3 gst.py 
+
+# CMD PYTHONUNBUFFERED=1 python3 webrtc_sendrecv.py \
+#       --server=ws://signalling:8443 \
+#       1

@@ -1,41 +1,44 @@
 version: '3'
 
 services:
-
-  pythia-demo:
-    image: rmclabs-io/pythia-demo
-    build:
-      context: .
-      dockerfile: pythia_demo/Dockerfile
-    volumes:
-      - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
-      - /tmp/.X11-unix:/tmp/.X11-unix
-    network_mode: "host"
-    restart: always
+  # pythia-demo:
+  #   image: rmclabs-io/pythia-demo
+  #   build:
+  #     context: .
+  #     dockerfile: pythia_demo/Dockerfile
+  #   volumes:
+  #     - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
+  #     - /tmp/.X11-unix:/tmp/.X11-unix
+  #   network_mode: "host"
+  #   runtime: nvidia
+  #   restart: always
 
   sendrecv-gst:
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    # network_mode: "host"
     build: ./sendrecv/gst
     restart: always
 
-  # sendrecv-js:
-  #   build: ./sendrecv/js
-  #   ports:
-  #     - 8080:80
-  #   depends_on:
-  #     - signalling
-
-  flask-front:
-    build:
-      context: .
-      dockerfile: sendrecv/front/Dockerfile
-    volumes:
-      - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
+  sendrecv-js:
+    build: ./sendrecv/js
     ports:
       - 8080:80
     depends_on:
       - signalling
 
+  # flask-front:
+  #  build:
+  #    context: .
+  #    dockerfile: front/Dockerfile
+  #  volumes:
+  #    - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
+  #  ports:
+  #    - 8080:80
+  #  depends_on:
+  #    - signalling
+
   signalling:
-    build: ./signalling
-    ports:
-      - 9443:8443
+   build: ./signalling
+   ports:
+     - 9443:8443
