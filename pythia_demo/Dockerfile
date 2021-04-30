@@ -12,20 +12,27 @@ RUN apt-get update \
     libgirepository1.0-dev \
     libgstreamer1.0 \
     libgstreamer-plugins-base1.0-dev \
+    gir1.2-gst-plugins-bad-1.0 \
     && python3 -m pip install --upgrade pip
 
-RUN python3 -m pip install --user \
-    pythiags[gpu,ds,cli]==0.10.0 \
-    SQLAlchemy==1.4.7
+RUN apt-get update \
+  && apt-get install -y \
+    libjson-glib-dev \
+    python-gst-1.0 \
+    gir1.2-gst-plugins-bad-1.0 \
+    gstreamer1.0-nice \
+    libcairo2-dev \
+    gstreamer1.0-plugins-*
+
+
+
+
+ADD ./pythia_demo/requirements.txt requirements.txt
+RUN python3 -m pip install --user -r requirements.txt
 
 COPY ./pythia_demo /opt
 ADD models.py /opt/models.py
 
-ENV PATH="/root/.local/bin:${PATH}"
-ENV PYTHONPATH='/opt'
-ENV DISPLAY=:0
-
 WORKDIR /opt
 
-ENTRYPOINT ["/bin/bash"]
-CMD ["run.sh"]
+ENTRYPOINT ["python3", "app.py"]
