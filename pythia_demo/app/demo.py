@@ -4,7 +4,6 @@ import random
 
 from pythiags import frames_per_batch, objects_per_frame, Producer, Consumer
 from pythiags.deepstream.iterators import analytics_per_frame
-from pythiags.deepstream.iterators import object_analytics_per_frame
 from pythiags.deepstream.iterators import analytics_per_object
 from pythiags.deepstream.parsers import detector_bbox
 
@@ -15,15 +14,6 @@ from dump import register_frame
 from dump import register_event
 from dump import SELECTED_ROIS
 
-
-class VideoRecorder:
-    def __init__(self, *a, **kw):
-        self.ctr = 0
-
-    def record(self):
-        if random.randint(0,1):
-            self.ctr += random.randint(0,100)
-        return f"/tmp/videos/{self.ctr}.avi"
 
 
 class MyCustomExtract(Producer):

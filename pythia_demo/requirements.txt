@@ -1,2 +1,4 @@
 SQLAlchemy==1.4.7
+Flask==1.1.2
 pythiags[gpu,ds,cli]==0.10.0
+websockets==8.1
