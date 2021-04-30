@@ -42,11 +42,9 @@ class Detection(Base):
     tracked_object_id = Column(String, nullable=False)
     rois = Column(String, nullable=True)
 
-    frame = relationship("Frame")
     frame_id = Column(Integer, ForeignKey("frame.id"), nullable=False)
-
-    event = relationship("Event")
     event_id = Column(Integer, ForeignKey("event.id"), nullable=False)
+
 
     def __repr__(self):
         return f"<<{self.label}({(100*self.confidence):.1f}%)@[({self.x_min:.1f},{self.y_min:.1f}),({self.x_max:.1f}\n, {self.y_max:.1f})>>"
@@ -60,7 +58,7 @@ class Frame(Base):
     camera_id = Column(Integer, nullable=False)
     frame_number = Column(Integer, nullable=False)
 
-    detections = relationship("Detection")
+    detections = relationship("Detection", backref='frame')
 
     def __repr__(self):
         return f"<<Frame {self.frame_number}@CAM_{self.camera_id}. Objects:{self.object_count:02d}Event ID:{self.event_id}"
@@ -70,10 +68,11 @@ class Event(Base):
     __tablename__ = "event"
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, nullable=False)
+    camera_id = Column(Integer, nullable=False)
     event_type = Column(String, nullable=False)
     evidence_video_path = Column(String, unique=True, nullable=False)
 
-    detections = relationship("Detection")
+    detections = relationship("Detection", backref='event')
 
     def __repr__(self):
         return f"Event {self.event_type}@{self.timestamp}"
