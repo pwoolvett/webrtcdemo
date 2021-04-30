@@ -20,7 +20,10 @@ services:
     build: ./sendrecv/gst
     # ports:
     #   - 8000:8000
+    runtime: nvidia
     restart: always
+    environment:
+      - DISPLAY=:0 
 
   # sendrecv-js:
   #   build: ./sendrecv/js
