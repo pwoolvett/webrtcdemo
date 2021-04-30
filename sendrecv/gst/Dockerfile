@@ -23,7 +23,8 @@ RUN python3 -m pip install  \
     pyxdg==0.25 \
     SecretStorage==2.3.1 \
     six==1.12.0 \
-    websockets==8.1
+    websockets==8.1 \
+    flask
 
 
 WORKDIR /opt/
@@ -40,7 +41,11 @@ COPY . /opt/
 
 ENV DISPLAY=:0
 
-CMD PYTHONUNBUFFERED=1 python3 gst.py 
+# CMD PYTHONUNBUFFERED=1 python3 gstreamer_webrtc.py 
+
+#make sure uvicorn does not start several apps... maybe enforce nworkers=1 or similar
+CMD PYTHONUNBUFFERED=1 \
+    python3 run.py
 
 # CMD PYTHONUNBUFFERED=1 python3 webrtc_sendrecv.py \
 #       --server=ws://signalling:8443 \

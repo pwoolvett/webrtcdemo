@@ -8,7 +8,6 @@ import sys
 import gi
 
 gi.require_version("Gst", "1.0")
-gi.require_version("Gst", "1.0")
 gi.require_version("GstWebRTC", "1.0")
 gi.require_version("GstSdp", "1.0")
 from gi.repository import Gst
@@ -19,10 +18,10 @@ import websockets
 from websockets.uri import parse_uri
 
 
-from utils import get_by_name_or_raise
-from utils import traced_async
-from utils import traced
-from utils import start_asyncio_background
+from app.utils import get_by_name_or_raise
+from app.utils import traced_async
+from app.utils import traced
+from app.utils import start_asyncio_background
 
 FPS=30
 RUNTIME_SEC=600
@@ -142,7 +141,7 @@ class WebRTCClient:
     def __init__(
         self,
         id_: int,
-        peer_id: int,
+        peer_id: int,  # TODO: this should be defined in the callback so we do not have to hardcode it in js
         server: str, # websocket uri
         pipeline: Gst.Pipeline, 
         connection_endpoint: str
