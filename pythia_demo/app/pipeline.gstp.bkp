@@ -1,0 +1,9 @@
+videotestsrc
+    is-live=true
+    pattern=ball
+! tee
+    name=connection
+connection.
+! queue
+! nvvideoconvert
+! nveglglessink
