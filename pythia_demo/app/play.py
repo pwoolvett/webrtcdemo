@@ -33,11 +33,11 @@ class Ventanas(Standalone):
 
 
 
-mem = None # _build_meta_map(
-#     "analytics",
-#     "app.extractor:AnalyticsExtractor",
-#     "app.consumer:DDBBWriter",
-# )
+mem = _build_meta_map(
+    "analytics",
+    "app.extractor:AnalyticsExtractor",
+    "app.consumer:DDBBWriter",
+)
 pipeline_str = pipe_from_file("app/pipeline.gstp")
 
 application = Ventanas(pipeline_str, mem)
