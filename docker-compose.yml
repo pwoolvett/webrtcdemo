@@ -18,25 +18,27 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     # network_mode: "host"
     build: ./sendrecv/gst
+    ports:
+      - 8000:8000
     restart: always
 
-  sendrecv-js:
-    build: ./sendrecv/js
-    ports:
-      - 8080:80
-    depends_on:
-      - signalling
+  # sendrecv-js:
+  #   build: ./sendrecv/js
+  #   ports:
+  #     - 8080:80
+  #   depends_on:
+  #     - signalling
 
-  # flask-front:
-  #  build:
-  #    context: .
-  #    dockerfile: front/Dockerfile
-  #  volumes:
-  #    - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
-  #  ports:
-  #    - 8080:80
-  #  depends_on:
-  #    - signalling
+  flask-front:
+   build:
+     context: .
+     dockerfile: front/Dockerfile
+   volumes:
+     - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
+   ports:
+     - 8080:8888
+   depends_on:
+     - signalling
 
   signalling:
    build: ./signalling
