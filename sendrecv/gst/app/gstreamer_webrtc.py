@@ -17,7 +17,6 @@ from gi.repository import GstSdp
 import websockets
 from websockets.uri import parse_uri
 
-
 from app.utils import get_by_name_or_raise
 from app.utils import traced_async
 from app.utils import traced

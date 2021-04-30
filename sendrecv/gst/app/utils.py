@@ -25,7 +25,6 @@ def _build_repr(func, *a, **kw):
 
 
 def traced(func):
-
     @wraps(func)
     def wrapper(*a, **kw):
         uuid = str(uuid4())

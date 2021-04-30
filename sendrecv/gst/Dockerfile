@@ -1,4 +1,5 @@
-FROM maxmcd/gstreamer:1.14-buster
+# FROM maxmcd/gstreamer:1.14-buster
+FROM nvcr.io/nvidia/deepstream:5.0.1-20.09-samples
 
 RUN apt-get --allow-releaseinfo-change update \
     && apt-get install -y \
@@ -11,18 +12,18 @@ RUN apt-get --allow-releaseinfo-change update \
         gstreamer1.0-plugins-*
 
 RUN python3 -m pip install  \
-    asn1crypto==0.24.0 \
-    cryptography==2.6.1 \
-    entrypoints==0.3 \
-    gobject==0.1.0 \
-    keyring==17.1.1 \
-    keyrings.alt==3.1.1 \
-    pycairo==1.20.0 \
-    pycrypto==2.6.1 \
-    PyGObject==3.30.4 \
-    pyxdg==0.25 \
-    SecretStorage==2.3.1 \
-    six==1.12.0 \
+    # asn1crypto==0.24.0 \
+    # # cryptography==2.6.1 \
+    # entrypoints==0.3 \
+    # gobject==0.1.0 \
+    # keyring==17.1.1 \
+    # keyrings.alt==3.1.1 \
+    # pycairo==1.20.0 \
+    # pycrypto==2.6.1 \
+    # # PyGObject==3.30.4 \
+    # pyxdg==0.25 \
+    # SecretStorage==2.3.1 \
+    # six==1.12.0 \
     websockets==8.1 \
     flask
 
@@ -38,8 +39,6 @@ COPY . /opt/
 #     --peer-id=1 \
 #     --server=ws://signalling:8443 \
 #     --disable-ssl
-
-ENV DISPLAY=:0
 
 # CMD PYTHONUNBUFFERED=1 python3 gstreamer_webrtc.py 
 

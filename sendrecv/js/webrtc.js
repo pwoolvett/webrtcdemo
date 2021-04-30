@@ -194,6 +194,7 @@ function getLocalStream() {
 }
 
 function websocketServerConnect() {
+    
     connect_attempts++;
     if (connect_attempts > 3) {
         setError("Too many connection attempts, aborting. Refresh page to try again");
@@ -318,3 +319,23 @@ function createCall(msg) {
 
     return local_stream_promise;
 }
+
+function httpGetAsync(theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        console.log(xmlHttp.responseText);
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+function startStreaming() {
+    console.log('Start Streaming called');
+    httpGetAsync("///0.0.0.0:8000/start", console.log);
+    websocketServerConnect();
+    // httpGetAsync("/start", console.log);
+}
+// httpGetAsync("localhost:8000/start", console.log);
