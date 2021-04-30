@@ -1,29 +1,32 @@
 version: '3'
 
 services:
-  # pythia-demo:
-  #   image: rmclabs-io/pythia-demo
-  #   build:
-  #     context: .
-  #     dockerfile: pythia_demo/Dockerfile
-  #   volumes:
-  #     - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
-  #     - /tmp/.X11-unix:/tmp/.X11-unix
-  #   network_mode: "host"
-  #   runtime: nvidia
-  #   restart: always
-
-  sendrecv-gst:
+  pythia-demo:
+    image: rmclabs-io/pythia-demo
+    build:
+      context: .
+      dockerfile: pythia_demo/Dockerfile
     volumes:
+      - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
       - /tmp/.X11-unix:/tmp/.X11-unix
     network_mode: "host"
-    build: ./sendrecv/gst
-    # ports:
-    #   - 8000:8000
     runtime: nvidia
     restart: always
     environment:
       - DISPLAY=:0 
+      - PYTHONUNBUFFERED=1
+ 
+  # sendrecv-gst:
+  #   volumes:
+  #     - /tmp/.X11-unix:/tmp/.X11-unix
+  #   network_mode: "host"
+  #   build: ./sendrecv/gst
+  #   # ports:
+  #   #   - 8000:8000
+  #   runtime: nvidia
+  #   restart: always
+  #   environment:
+  #     - DISPLAY=:0 
 
   # sendrecv-js:
   #   build: ./sendrecv/js
