@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Cámaras en Vivo{% endblock %}
+
+{% block header_scripts %}
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="{{ url_for('static', filename='js/webrtc.js')}}"></script>
+<script>
+  window.onload = websocketServerConnect;
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div><video id="stream" autoplay playsinline>Your browser doesn't support video</video></div>
+
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Eventos{% endblock %}
+
+{% block content %}
+
+    <h1>Check Events</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        {{ form.date_from.label }}
+        {{ form.date_from(size=20) }}
+        
+        {{ form.time_from.label }}
+        {{ form.time_from(size=20) }}
+        {{ form.date_to.label }}
+        {{ form.date_to(size=20) }}
+        {{ form.time_to.label }}
+        {{ form.time_to(size=20) }}
+        {{ form.camera_id.label }}
+        {{ form.camera_id(size=20) }}
+        {{ form.submit() }}
+    </form>
+
+    {% if events %}
+         {% for event in events %}
+            <li>Date: {{ event.date }} </li>
+            <li>Time: {{ event.time }} </li>
+            <li>Zone: {{ event.area }} </li>
+            <li>Event: {{ event.type }} </li>
+            <li>Stored at: {{ event.video_path }} </li>
+        {% endfor %}
+    {% endif %}
+
+{% endblock %}
