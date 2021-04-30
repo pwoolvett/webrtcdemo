@@ -28,7 +28,7 @@ class RunLater(threading.Thread):
         self.cb_args = cb_args
         self.response = None
 
-    def run(self):  # todo verify q este sea el metodo
+    def run(self):  
         from time import sleep
         sleep(self.delay)
         result = self.cb(*self.cb_args)
@@ -42,7 +42,7 @@ def play_stream():
     thread = RunLater(
         3,
         cb=requests.get,
-        cb_args=("http://sendrecv-gst:8000/start",),
+        cb_args=("http://0.0.0.0:8000/start",),
         daemon=True
     )
     thread.start()

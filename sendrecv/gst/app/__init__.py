@@ -22,7 +22,7 @@ bus.connect ("message", bus_call, gstreamer_loop)
 webrtc_client =  WebRTCClient(
     id_=105,
     peer_id=1,
-    server="ws://signalling:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
+    server="ws://0.0.0.0:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
     pipeline=pipe,
     connection_endpoint="connection"
 )

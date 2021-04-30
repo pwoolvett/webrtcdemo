@@ -276,7 +276,7 @@ if __name__=="__main__":
     webrtc_client =  WebRTCClient(
         id_=105,
         peer_id=1,
-        server="ws://signalling:8443", # websocket uri
+        server="ws://0.0.0.0:8443", # websocket uri
         pipeline=pipe, 
         connection_endpoint="connection"
     )
