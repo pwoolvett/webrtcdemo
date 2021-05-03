@@ -23,6 +23,8 @@ from app.utils.utils import start_asyncio_background
 from gi.repository import GLib
 
 from app.utils.utils import get_by_name_or_raise
+from app.utils.logger import logger
+
 
 FPS=30
 RUNTIME_SEC=600
@@ -136,7 +138,7 @@ class GstPlayer:
         return Gst.PadProbeReturn.REMOVE
 
 class WebRTCClient:
-    @traced
+    @traced(logger.info)
     def __init__(
         self,
         id_: int,
@@ -156,11 +158,9 @@ class WebRTCClient:
         self.player = GstPlayer(self, pipeline, connection_endpoint)
 
 
-        # self.server = 'wss://webrtc.nirbheek.in:8443'
-
-    @traced_async
+    @traced_async(logger.info)
     async def connect(self):
-        wsuri = traced(parse_uri)(self.server)
+        wsuri = traced(logger.info)(parse_uri)(self.server)
         if wsuri.secure:
             sslctx = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
         else:
@@ -173,7 +173,7 @@ class WebRTCClient:
 
     def send_sdp_offer(self, offer):
         text = offer.sdp.as_text()
-        print("Sending offer:\n%s" % text)
+        logger.info("Sending offer:\n%s" % text)
         msg = json.dumps({"sdp": {"type": "offer", "sdp": text}})
         loop = asyncio.new_event_loop()
         loop.run_until_complete(self.conn.send(msg))
@@ -209,7 +209,7 @@ class WebRTCClient:
             sdp = msg["sdp"]
             assert sdp["type"] == "answer"
             sdp = sdp["sdp"]
-            print("Received answer:\n%s" % sdp)
+            logger.info("Received answer:\n%s" % sdp)
             res, sdpmsg = GstSdp.SDPMessage.new()
             GstSdp.sdp_message_parse_buffer(bytes(sdp.encode()), sdpmsg)
             answer = GstWebRTC.WebRTCSessionDescription.new(
@@ -235,7 +235,7 @@ class WebRTCClient:
             elif message == "SESSION_OK":
                 self.player.start_streaming()
             elif message.startswith("ERROR"):
-                print(message)
+                logger.error(message)
                 self.close_streaming_connection()
                 return 1
             else:
