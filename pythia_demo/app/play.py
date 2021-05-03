@@ -5,16 +5,15 @@ gi.require_version("Gst", "1.0")
 gi.require_version("GstWebRTC", "1.0")
 gi.require_version("GstSdp", "1.0")
 from gi.repository import Gst
-from gi.repository import GLib
 
 from pythiags.headless import Standalone
 from pythiags.headless import GObject
-from pythiags.headless import logger
 from pythiags.cli import _build_meta_map
 from pythiags.cli import pipe_from_file
 
-from app.utils.utils import get_by_name_or_raise
 from app.webrtc_client import WebRTCClient
+from app.recorder import VideoRecorder
+
 
 class Ventanas(Standalone):
 
@@ -31,13 +30,12 @@ class Ventanas(Standalone):
         # finally:
         #     self.stop()
 
-
-
 mem = _build_meta_map(
     "analytics",
     "app.extractor:AnalyticsExtractor",
     "app.consumer:DDBBWriter",
 )
+
 pipeline_str = pipe_from_file("app/pipeline.gstp")
 
 application = Ventanas(pipeline_str, mem)
@@ -50,5 +48,13 @@ gstreamer_webrtc_client = WebRTCClient(
     connection_endpoint="connection"
 )
 
+video_recorder = VideoRecorder(
+    application.pipeline, 
+    fps=30, 
+    window_size=2
+    )
+
+extractor, consumer = mem["analytics"]
+consumer.set_video_recorder(video_recorder)
+
 application()
-    # TODO ALSO RUN FLASK AND SHIT

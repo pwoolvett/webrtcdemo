@@ -2,18 +2,18 @@
 
 from pythiags import Consumer
 
+from app.utils.logger import logger
 from app.utils.common import Session
 from app.utils.dump import check_detection_importance
 from app.utils.dump import register_detection
 from app.utils.dump import register_frame
 from app.utils.dump import register_event
 from app.utils.dump import SELECTED_ROIS
-from app.utils.gladiolo import VideoRecorder
 
 
 class DDBBWriter(Consumer):
     def __init__(self, ):
-        self.video_recorder = VideoRecorder()
+        self.video_recorder = None
         self.selected_rois = SELECTED_ROIS
         self.Session = Session
 
@@ -28,6 +28,7 @@ class DDBBWriter(Consumer):
                 return
 
             video_path = self.video_recorder.record()
+            logger.info(f"Saving video at {video_path}")
 
             # Check if event has already been registered
             event_id = register_event(video_path, event_type="Trespassing", db_session=db_session, camera_id=source_id)
@@ -56,6 +57,11 @@ class DDBBWriter(Consumer):
             important_detections.append(detection)
         return important_detections
 
+
     def incoming(self, events):
         session = self.Session()
         self.dump_metadata(events, session)
+
+        
+    def set_video_recorder(self, video_recorder):
+        self.video_recorder = video_recorder
