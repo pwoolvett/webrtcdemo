@@ -9,6 +9,7 @@ services:
     volumes:
       - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /home/rmclabs/RMCLabs/webrtcdemo/debug/vids:/opt/vids
     network_mode: "host"
     runtime: nvidia
     restart: always
