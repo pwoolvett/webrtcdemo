@@ -20,15 +20,27 @@ nvstreammux
     config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/config_nvdsanalytics.txt
     name=analytics
 ! nvmultistreamtiler
+    width=1280
+    height=720
 ! nvvideoconvert
 ! nvdsosd
 ! tee name=t
-
 
 t.
 ! queue
 ! nveglglessink
 
+t.
+! queue
+! nvvideoconvert
+! decodebin
+! nvvideoconvert
+! videoconvert
+! video/x-raw,format=YV12
+! appsink
+  name=appsink
+  emit-signals=true
+  async=false
 
 t.
 ! queue
@@ -39,7 +51,6 @@ t.
 ! video/x-raw,format=I420
 ! tee
   name=connection
-
 
 connection.
 ! queue
