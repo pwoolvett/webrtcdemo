@@ -2,20 +2,26 @@
 from time import sleep
 from flask import Flask
 
-flaskapp = Flask("RMCLabs")
+video_endpoint = Flask("RMCLabs")
 
+from app.utils.logger import logger
 from app.play import gstreamer_webrtc_client
+from app.play import video_recorder
 
-# @flaskapp.route("/start")
-# def home():
-#     print("HELLO WORLD")
-#     return "hello world"
 
-@flaskapp.route("/start", methods = ["GET"])
+@video_endpoint.route('/record', methods = ["GET"])
+def start_recording():
+    logger.info("Received recording request")
+    recorded_video_path = video_recorder.record()
+    return {
+        "STATUS": f"RECORDING VIDEO",
+        "video_path": recorded_video_path,
+    }
+
+
+@video_endpoint.route("/start", methods = ["GET"])
 def start_streaming():
-    print("Received request")
-    # webrtc_client.open_streaming_connection()
-    # return {"STATUS": "Received starting streaming request"} 
+    logger.info("Received start_streaming request")
     errs=[]
     for _ in range(10):
         try:
@@ -30,7 +36,7 @@ def start_streaming():
     return {"ERROR_TYPE":"MULTIPLE ERRORS", "ERROR":errs}
 
 if __name__ == "__main__":
-    flaskapp.run(
+    video_endpoint.run(
         debug=False,
         host="0.0.0.0",
         port=8000,
