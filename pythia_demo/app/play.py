@@ -13,6 +13,7 @@ from pythiags.cli import pipe_from_file
 
 from app.webrtc_client import WebRTCClient
 from app.recorder import VideoRecorder
+from app.utils.utils import get_by_name_or_raise
 
 
 class Ventanas(Standalone):
@@ -29,6 +30,27 @@ class Ventanas(Standalone):
         #     raise
         # finally:
         #     self.stop()
+
+    @property
+    def muxer(self):
+        return get_by_name_or_raise(self.pipeline, "muxer")
+
+
+    @property
+    def tiler(self):
+        return get_by_name_or_raise(self.pipeline, "tiler")
+
+    @property
+    def cameras(self):
+        return [
+            str(pad)
+            for pad in self.muxer.pads
+            if "sink" in str(pad.direction).lower()
+        ]
+
+    def focus_camera(self, camera_id):  # TODO: handle wrong number
+        result = self.tiler.set_property("show-source", camera_id)
+        return {"status": "OK", "result": str(result)}
 
 mem = _build_meta_map(
     "analytics",
@@ -52,7 +74,7 @@ video_recorder = VideoRecorder(
     application.pipeline, 
     fps=30, 
     window_size=2
-    )
+)
 
 extractor, consumer = mem["analytics"]
 consumer.set_video_recorder(video_recorder)

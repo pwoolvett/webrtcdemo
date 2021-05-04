@@ -1,13 +1,33 @@
 #!/usr/bin/env python
 from time import sleep
 from flask import Flask
+from flask import request
 
 video_endpoint = Flask("RMCLabs")
 
 from app.utils.logger import logger
 from app.play import gstreamer_webrtc_client
 from app.play import video_recorder
+from app.play import application
 
+@video_endpoint.route('/list_cameras', methods = ["GET"])
+def list_cameras():
+    logger.info("Received list cameras request")
+    cameras = application.cameras
+    return {
+        "STATUS": f"OK",
+        "cameras": cameras,
+    }
+
+
+@video_endpoint.route('/focus_camera/<camera_id>', methods = ["GET"])  # TODO use post instead
+def focus_camera(camera_id:int):
+    logger.info("Received focus camera request")
+    response = application.focus_camera(int(camera_id))
+    return {
+        "STATUS": f"???",
+        "response": response,
+    }
 
 @video_endpoint.route('/record', methods = ["GET"])
 def start_recording():
