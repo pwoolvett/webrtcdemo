@@ -55,3 +55,4 @@ webrtc-sendrecv
 __pycache__
 **/*venv
 db/*
+debug/vids/

@@ -12,11 +12,13 @@ from app.play import application
 
 @video_endpoint.route('/list_cameras', methods = ["GET"])
 def list_cameras():
+    print("CALLED: list_cameras")
     logger.info("Received list cameras request")
     cameras = application.cameras
+    print(f"cameras: {cameras}")
     return {
         "STATUS": f"OK",
-        "cameras": cameras,
+        "cameras": list(range(len(cameras))), # TODO: actually map these to nvstreammux sourcepads
     }
 
 
@@ -39,21 +41,22 @@ def start_recording():
     }
 
 
-@video_endpoint.route("/start", methods = ["GET"])
-def start_streaming():
+@video_endpoint.route("/start/<peer_id>", methods = ["GET"])
+def start_streaming(peer_id):
     logger.info("Received start_streaming request")
-    errs=[]
-    for _ in range(10):
-        try:
-            gstreamer_webrtc_client.open_streaming_connection()
-            return {"STATUS": "RUNNING"} 
-        except Exception as e:
-            errs.append({
-                "ERROR_TYPE": str(type(e)),
-                "ERROR":str(e) 
-            })
-            sleep(1)
-    return {"ERROR_TYPE":"MULTIPLE ERRORS", "ERROR":errs}
+    gstreamer_webrtc_client.open_streaming_connection(peer_id)
+    return {"status" "OK"}
+    # errs=[]
+    # for _ in range(10):
+    #     try:
+    #         return {"STATUS": "RUNNING"} 
+    #     except Exception as e:
+    #         errs.append({
+    #             "ERROR_TYPE": str(type(e)),
+    #             "ERROR":str(e) 
+    #         })
+    #         sleep(1)
+    # return {"ERROR_TYPE":"MULTIPLE ERRORS", "ERROR":errs}
 
 if __name__ == "__main__":
     video_endpoint.run(

@@ -38,14 +38,15 @@ class RunLater(threading.Thread):
 
 @app.route("/live")
 def play_stream():
-    print("Requesting stream from gst server")
-    thread = RunLater(
-        3,
-        cb=requests.get,
-        cb_args=("http://0.0.0.0:8000/start",),
-        daemon=True
-    )
-    thread.start()
+    # print("Requesting stream from gst server")
+    # thread = RunLater(
+    #     3,
+    #     cb=requests.get,
+    #     # cb_args=("http://0.0.0.0:8000/start",),
+    #     cb_args=("http://0.0.0.0:8000/start",),
+    #     daemon=True
+    # )
+    # thread.start()
     return flask.render_template("live.html")
 
 

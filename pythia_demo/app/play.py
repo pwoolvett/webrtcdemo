@@ -64,7 +64,7 @@ application = Ventanas(pipeline_str, mem)
 
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
-    peer_id=1,
+    # peer_id=1,
     server="ws://0.0.0.0:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
     pipeline=application.pipeline,
     connection_endpoint="connection"
