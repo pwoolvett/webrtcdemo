@@ -5,5 +5,16 @@ services:
     volumes:
         - ./debug/dots:/opt/dots
     environment:
-        - GST_DEBUG_DUMP_DOT_DIR=/opt/
+        - GST_DEBUG_DUMP_DOT_DIR=/opt/dots
         - GST_DEBUG_LOG_LEVEL=
+  contextls:
+    build:
+      context: .
+      dockerfile: .contextls/Dockerfile
+    entrypoint:
+      - sh
+      - -c
+    command:
+      - ls
+      - -lah
+      - /opt/context

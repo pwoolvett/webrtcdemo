@@ -1,1 +1,9 @@
 **/*venv/
+.git
+.dockerignore
+.gitignore
+.contextls
+README.md
+db/
+debug/
+docker-compose*

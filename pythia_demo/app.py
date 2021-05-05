@@ -45,7 +45,7 @@ def start_recording():
 def start_streaming(peer_id):
     logger.info("Received start_streaming request")
     gstreamer_webrtc_client.open_streaming_connection(peer_id)
-    return {"status" "OK"}
+    return {"status": "OK"}
     # errs=[]
     # for _ in range(10):
     #     try:
