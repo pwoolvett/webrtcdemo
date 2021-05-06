@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  pythia-demo:
+  backend:
     volumes:
         - ./debug/dots:/opt/dots
     environment:

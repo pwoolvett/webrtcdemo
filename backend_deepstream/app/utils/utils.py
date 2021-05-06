@@ -41,7 +41,7 @@ def traced(logging_function):
             except Exception as exc:
                 logger.error(f"{'ERROR':<8} [{uuid}]: {name} - {type(exc).__name__} ({exc})")
                 raise
-            logging_function(f"{'RETURN':<8} [{uuid}]: {name}", end="")
+            logging_function(f"{'RETURN':<8} [{uuid}]: {name}")
             logging_function("\n         " + str(ret).replace("\n", "\n         "))
             return ret
         return wrapper
@@ -59,7 +59,7 @@ def traced_async(logging_function):
             except Exception as exc:
                 logger.error(f"{'ERROR':<8} [{uuid}]: {name} - {type(exc).__name__} ({exc})")
                 raise
-            logging_function(f"{'RETURN':<8} [{uuid}]: {name}", end="")
+            logging_function(f"{'RETURN':<8} [{uuid}]: {name}")
             logging_function("\n         " + str(ret).replace("\n", "\n         "))
             return ret
 
@@ -161,3 +161,32 @@ def run_later(
     )
     runner.start()
     return runner
+
+
+
+from typing import Union
+from pathlib import Path
+
+def pipe_from_file(
+    path: Union[str, Path],
+    **pipeline_kwargs
+) -> str:
+    logger.info(f"Loading pipeline from {path}")
+
+    real = Path(path).resolve()
+    with open(real) as fp:
+        pipeline_string = fp.read()
+    lines = []
+    for line in pipeline_string.split("\n"):
+        raw = line.strip()
+        content = raw.split("#", 1)[0]
+        if content.strip():
+            lines.append(content)
+    pipeline_string = "\n".join(lines)
+    try:
+        formatted_pipeline = pipeline_string.format_map(pipeline_kwargs)
+    except KeyError as exc:
+        logger.error(f"PythiaGsApp: Cannot run {real}. Reason: {repr(exc)}")
+        raise
+
+    return formatted_pipeline

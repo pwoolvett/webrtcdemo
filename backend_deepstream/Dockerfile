@@ -27,12 +27,13 @@ RUN apt-get update \
 
 
 
-ADD ./pythia_demo/requirements.txt requirements.txt
+ADD ./backend_deepstream/requirements.txt requirements.txt
 RUN python3 -m pip install --user -r requirements.txt
 
-COPY ./pythia_demo /opt
+COPY ./backend_deepstream /opt
 ADD models.py /opt/models.py
 
 WORKDIR /opt
 
+ENV PYTHONUNBUFFERED=1
 ENTRYPOINT ["python3", "app.py"]

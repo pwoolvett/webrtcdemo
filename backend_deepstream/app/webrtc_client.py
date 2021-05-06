@@ -80,11 +80,14 @@ class GstPlayer:
         self.streaming_bin = None
         self.webrtc_bin = None
 
+    @traced(print)
     def start_streaming(self, ) -> None:
         self.streaming_bin = Gst.parse_bin_from_description(self.STREAMING_BIN, True)
         self._connect_webrtc_signals() # FIXME: also disconnect signals when hanging
         self.connect_streaming_bin()   # TODO: link and sync states in a buffer probe
+        return self.streaming_bin
 
+    @traced(print)
     def _connect_webrtc_signals(self, ):
         self.webrtc_bin = self.streaming_bin.get_by_name("sendrecv")
         self.webrtc_bin.connect("on-negotiation-needed", self.on_negotiation_needed)
@@ -109,6 +112,7 @@ class GstPlayer:
         self.streaming_bin = None  # TODO maybe also unlink to avoid memleak
         self.webrtc_bin = None  # TODO maybe also unlink to avoid memleak
 
+    @traced(print)
     def connect_streaming_bin(self) -> None:
         connection_pad = self.connection_endpoint.get_static_pad('sink')
         connection_pad.add_probe(Gst.PadProbeType.BUFFER, self.connect_bin_callback)
@@ -153,14 +157,14 @@ class WebRTCClient:
         self.peer_id = None # peer_id
         if not server:
             raise ValueError
-        self.server = server or "wss://webrtc.nirbheek.in:8443"
+        self.server = server
 
         self.player = GstPlayer(self, pipeline, connection_endpoint)
 
 
-    @traced_async(logger.info)
+    @traced_async(print)
     async def connect(self):
-        wsuri = traced(logger.info)(parse_uri)(self.server)
+        wsuri = traced(print)(parse_uri)(self.server)
         if wsuri.secure:
             sslctx = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
         else:
@@ -168,6 +172,7 @@ class WebRTCClient:
         self.conn = await websockets.connect(self.server, ssl=sslctx)
         await self.conn.send("HELLO %d" % self.our_id)
 
+    @traced_async(print)
     async def setup_call(self):
         await self.conn.send("SESSION {}".format(self.peer_id))
 
@@ -189,6 +194,7 @@ class WebRTCClient:
         loop.close()
 
 
+    @traced(print)
     def open_streaming_connection(self, peer_id):
         self.peer_id = peer_id
         client_loop = asyncio.get_event_loop()
@@ -203,6 +209,7 @@ class WebRTCClient:
     def pipe(self):
         return self.player.pipe
 
+    @traced(print)
     def handle_sdp(self, message):
         assert self.webrtc
         msg = json.loads(message)
@@ -224,10 +231,12 @@ class WebRTCClient:
             candidate = ice["candidate"]
             sdpmlineindex = ice["sdpMLineIndex"]
             self.webrtc.emit("add-ice-candidate", sdpmlineindex, candidate)
-
+    
+    @traced(print)
     def close_streaming_connection(self):
         self.player.stop_streaming()
 
+    @traced_async(print)
     async def connection_monitor(self):
         assert self.conn
         async for message in self.conn:

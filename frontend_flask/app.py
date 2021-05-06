@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+import os
+
 from app import app
 
 if __name__ == "__main__":
     app.run(
         debug=False,
-        host="0.0.0.0",
-        port=8888,
+        host=os.environ["FLASK_RUN_HOST"],
+        port=os.environ["FLASK_RUN_PORT"],
     )

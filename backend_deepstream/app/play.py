@@ -14,7 +14,7 @@ from pythiags.cli import pipe_from_file
 from app.webrtc_client import WebRTCClient
 from app.recorder import VideoRecorder
 from app.utils.utils import get_by_name_or_raise
-
+from app.utils.utils import pipe_from_file
 
 class Ventanas(Standalone):
 
@@ -52,31 +52,39 @@ class Ventanas(Standalone):
         result = self.tiler.set_property("show-source", camera_id)
         return {"status": "OK", "result": str(result)}
 
-mem = _build_meta_map(
-    "analytics",
-    "app.extractor:AnalyticsExtractor",
-    "app.consumer:DDBBWriter",
-)
+# mem = _build_meta_map(
+#     "analytics",
+#     "app.extractor:AnalyticsExtractor",
+#     "app.consumer:DDBBWriter",
+# )
+mem=None
 
 pipeline_str = pipe_from_file("app/pipeline.gstp")
+print("\n"*10)
+print(pipeline_str)
+print("\n"*10)
 
 application = Ventanas(pipeline_str, mem)
 
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
     # peer_id=1,
-    server="ws://0.0.0.0:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
+    # server="ws://0.0.0.0:9999/signalling", # websocket uri  TODO: with net=host in docker-compose this wont work
+    server="ws://localhost:7003", # websocket uri
     pipeline=application.pipeline,
     connection_endpoint="connection"
 )
 
-video_recorder = VideoRecorder(
-    application.pipeline, 
-    fps=30, 
-    window_size=2
-)
+# video_recorder = VideoRecorder(
+#     application.pipeline, 
+#     fps=30, 
+#     window_size=2
+# )
+video_recorder = None
 
-extractor, consumer = mem["analytics"]
-consumer.set_video_recorder(video_recorder)
+# extractor, consumer = mem["analytics"]
+# consumer.set_video_recorder(video_recorder)
 
 application()
+# application.loop.run()  # TODO: remove these to re-enable flask
+# import sys;sys.exit()   # TODO: remove these to re-enable flask

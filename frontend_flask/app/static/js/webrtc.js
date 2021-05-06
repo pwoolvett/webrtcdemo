@@ -26,7 +26,7 @@
 
 // Set this to override the automatic detection in websocketServerConnect()
 var ws_server;
-var ws_port;
+var ws_port=7003;
 // Set this to use a specific peer id instead of a random one
 var default_peer_id = 1;
 // Override with your own STUN servers if you want
@@ -352,19 +352,15 @@ function createCall(msg) {
 function listCameras(onsuccess, onFailure) {
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
-        console.log("RECEIVED RESPONSE");
-        response=this;
-        console.log(this);
         if (this.readyState == 4) {
             if (this.status == 200) {
                 onsuccess(this);
-
             } else {
                 onFailure(this);
             }
         }
     };
-    xhttp.open("GET", "/pythia-demo/list_cameras", true);
+    xhttp.open("GET", "/api/list_cameras", true);
     xhttp.send();
 }
 
@@ -372,7 +368,7 @@ function listCameras(onsuccess, onFailure) {
 function changeCamera(camera_id, onSuccess, onFailure) {
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
-        console.log("RECEIVED RESPONSE");
+        console.log("RECEIVED changeCamera RESPONSE");
         response=this;
         console.log(this);
         if (this.readyState == 4) {
@@ -383,7 +379,7 @@ function changeCamera(camera_id, onSuccess, onFailure) {
             }
         }
     };
-    xhttp.open("GET", `/pythia-demo/focus_camera/${camera_id}`, true);
+    xhttp.open("GET", `/api/focus_camera/${camera_id}`, true);
     xhttp.send();
 }
 
@@ -402,21 +398,22 @@ function showVideo() {
 } 
 
 function requestCall(peer_id) {
+    setStatus("requesting call");
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
-        console.log("RECEIVED CALL REQUEST RESPONSE");
-        response=this;
-        console.log(this);
         if (this.readyState == 4) {
             if (this.status == 200) {
-                onsuccess(this);
+                console.log("REQUEST call SUCCEEDED");
+            } else if (this.status == 101) {
+                console.log("websocket connected");
+                console.log("requestCall SUCCEEDED");
             } else {
                 console.log("REQUEST FAILED");
                 console.log(this);
             }
         }
     };
-    xhttp.open("GET", `/pythia-demo/start/${peer_id}`, true);
+    xhttp.open("GET", `/api/start/${peer_id}`, true);
     xhttp.send();
 }
 
@@ -469,18 +466,20 @@ function setCameraSelectionButtons(cameras) {
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 function onLoad() {
-    listCameras(
-        function(xhttp){
-            console.log("STATUS OK");
-            let cameras = JSON.parse(xhttp.response)["cameras"];
-            hideVideoProgressbar();
-            showVideo();
-            setCameraSelectionButtons(cameras);
-            websocketServerConnect();
-        },
-        function(xhttp){
-            console.log("GOT not 200");
-            window.setTimeout(listCameras.bind(null, n+1), 1000);
-        }
-    );
+
+    function onSuccess(xhttp){
+        console.log("STATUS OK");
+        let cameras = JSON.parse(xhttp.response)["cameras"];
+        hideVideoProgressbar();
+        showVideo();
+        setCameraSelectionButtons(cameras);
+        websocketServerConnect();
+    };
+
+    function onError(xhttp){
+        console.log("GOT not 200");
+        // window.setTimeout(listCameras.bind(null,onSuccess, onError), 5000);
+    }
+
+    listCameras(onSuccess, onError);
 }
