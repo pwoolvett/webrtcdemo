@@ -443,23 +443,40 @@ function setCameraSelectionButtons(cameras) {
         );
     }
 
-    let cameraButtons = document.getElementById("cameraButtons")
-    cameraButtons.innerHTML = "";
 
-    for (const camera_id of cameras) {
-        let radioButton = htmlToElement(`
+    function buildButtonString(camera_id, legend=null, checked=false){
+        return `
             <label
               class="mdl-radio mdl-js-radio mdl-js-ripple-effect"
               for="option-${camera_id}"
               onclick="onRadioButtonClick(${camera_id})"
             >
-                <input type="radio" id="option-${camera_id}" class="mdl-radio__button" name="options" value="${camera_id}">
-                <span class="mdl-radio__label">Cámara ${camera_id}</span>
+                <input
+                  type="radio"
+                  id="option-${camera_id}"
+                  class="mdl-radio__button"
+                  name="options"
+                  value="${camera_id}"
+                  ${checked?'checked':''}
+                >
+                <span class="mdl-radio__label">${(legend===null)? 'Cámara '+camera_id : legend }</span>
             </label>        
-        `);
+        `
+    }
+
+    let cameraButtons = document.getElementById("cameraButtons")
+    cameraButtons.innerHTML = "";
+
+    let radioButton = htmlToElement(buildButtonString(-1, "Todas las cámaras ", true));
+    radioButton.onclick = button => onRadioButtonClick(-1);
+    cameraButtons.appendChild(radioButton);
+
+    for (const camera_id of cameras) {
+        radioButton = htmlToElement(buildButtonString(camera_id));
         radioButton.onclick = button => onRadioButtonClick(camera_id);
         cameraButtons.appendChild(radioButton);
     }
+
 
     return ;
 }
