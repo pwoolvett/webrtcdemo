@@ -52,12 +52,11 @@ class Ventanas(Standalone):
         result = self.tiler.set_property("show-source", camera_id)
         return {"status": "OK", "result": str(result)}
 
-# mem = _build_meta_map(
-#     "analytics",
-#     "app.extractor:AnalyticsExtractor",
-#     "app.consumer:DDBBWriter",
-# )
-mem=None
+mem = _build_meta_map(
+    "analytics",
+    "app.extractor:AnalyticsExtractor",
+    "app.consumer:DDBBWriter",
+)
 
 pipeline_str = pipe_from_file("app/pipeline.gstp")
 print("\n"*10)
