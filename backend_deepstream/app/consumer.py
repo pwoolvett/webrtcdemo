@@ -27,7 +27,7 @@ class DDBBWriter(Consumer):
             if not len(important_detections):
                 return
 
-            video_path = self.video_recorder.record()
+            video_path = self.video_recorder.record(source_id)
             logger.info(f"Saving video at {video_path}")
 
             # Check if event has already been registered

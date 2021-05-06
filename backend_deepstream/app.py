@@ -34,10 +34,10 @@ def focus_camera(camera_id:int):
         "response": response,
     }
 
-@video_endpoint.route('/record', methods = ["GET"])
-def start_recording():
+@video_endpoint.route('/record/<source_id>', methods = ["GET"])
+def start_recording(source_id):
     logger.info("Received recording request")
-    recorded_video_path = video_recorder.record()
+    recorded_video_path = video_recorder.record(source_id)
     return {
         "STATUS": f"RECORDING VIDEO",
         "video_path": recorded_video_path,

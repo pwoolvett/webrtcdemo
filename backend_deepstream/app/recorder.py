@@ -156,6 +156,7 @@ class VideoRecorder:
         sink_location_prefix="vids/out_",
         wait_start_msec=3000,
         running_since=None,
+        appsink_name="appsink",
     ):
         """
 
@@ -179,9 +180,9 @@ class VideoRecorder:
 
         self.state = self.States.IDLE
 
-
         self.deque = collections.deque(maxlen=fps*window_size)
-        self.appsink = pipeline.get_by_name("appsink")
+        self.appsink_name = appsink_name
+        self.appsink = self.get_appsink()
         self.appsink.connect(
             'new-sample',
             self.on_new_sample
@@ -290,9 +291,9 @@ class VideoRecorder:
     @dotted
     @traced(logger.info)
     def _start_recording(self, name):
-        tee_sink = self.appsink.get_static_pad('sink')
+        app_sink = self.appsink.get_static_pad('sink')
 
-        add = tee_sink.add_probe(
+        add = app_sink.add_probe(
             Gst.PadProbeType.BUFFER,
             self._connect_bin,
             name
@@ -377,18 +378,47 @@ class VideoRecorder:
         record_bin.send_event(Gst.Event.new_eos())
         return Gst.PadProbeReturn.REMOVE
 
+    def get_appsink(self):
+        appsink= self.pipeline.get_by_name(self.appsink_name)
+        if not appsink:
+            raise NameError(f"Unable to find {self.appsink_name}")
+        return appsink
+
     @traced(logger.info)
     def _stop_recording(self):
         if not self.record_bin:
             logger.debug(f"Record bin already removed - skipping stop recording")
             return
         self.state = self.States.FINISHING
-        tee = self.pipeline.get_by_name("appsink")
-        tee_src = tee.get_static_pad('sink')
-        tee_src.add_probe(
+        appsink = self.get_appsink()  # TODO: cant we justself.appsink here?
+        appsink_src = appsink.get_static_pad('sink')
+        appsink_src.add_probe(
             Gst.PadProbeType.BLOCK,
             self._disconnect_bin,
         )
+
+
+class MultiVideoRecorder:
+
+    def __init__(
+        self,
+        cameras,
+        appsink_fmt="appsink_",
+        **recorder_kw
+
+    ):
+        recorder_kw.setdefault("running_since", datetime.datetime.now())
+        self.recorders = {
+            camera: VideoRecorder(
+                appsink_name=f"{appsink_fmt}{camera}",
+                **recorder_kw
+            )
+            for camera in cameras
+        }
+
+    def record(self, source_id):
+        recorder = self.recorders[source_id]
+        return recorder.record()
 
 # s = pad.get_current_caps().get_structure(0)
 # width, height, fps = (

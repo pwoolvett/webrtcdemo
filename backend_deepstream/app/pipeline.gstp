@@ -64,33 +64,33 @@ osd_tee.
 
 
 
-# analytics_tee.
-# ! queue
-# ! nvstreamdemux
-#     name=demux
+analytics_tee.
+! queue
+! nvstreamdemux
+    name=demux
 
-# demux.src_0
-# ! video/x-raw(memory:NVMM), format=NV12
-# ! queue
-# ! nvvideoconvert
-# ! decodebin
-# ! nvvideoconvert
-# ! videoconvert
-# ! video/x-raw,format=YV12
-# ! appsink
-#   name=appsink_0
-#   emit-signals=true
-#   async=false
+demux.src_0
+! video/x-raw(memory:NVMM), format=NV12
+! queue
+! nvvideoconvert
+! decodebin
+! nvvideoconvert
+! videoconvert
+! video/x-raw,format=YV12
+! appsink
+  name=appsink_0
+  emit-signals=true
+  async=false
 
-# demux.src_1
-# ! video/x-raw(memory:NVMM), format=NV12
-# ! queue
-# ! nvvideoconvert
-# ! decodebin
-# ! nvvideoconvert
-# ! videoconvert
-# ! video/x-raw,format=YV12
-# ! appsink
-#   name=appsink_1
-#   emit-signals=true
-#   async=false
+demux.src_1
+! video/x-raw(memory:NVMM), format=NV12
+! queue
+! nvvideoconvert
+! decodebin
+! nvvideoconvert
+! videoconvert
+! video/x-raw,format=YV12
+! appsink
+  name=appsink_1
+  emit-signals=true
+  async=false
