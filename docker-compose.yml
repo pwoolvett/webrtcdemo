@@ -43,10 +43,13 @@ services:
     network_mode: "host"
     volumes:
       - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
+      - /home/rmclabs/RMCLabs/webrtcdemo/debug:/videos
     # ports:
     #   - 8080:8888
     depends_on:
       - signalling
+    environment:
+      - PYTHONUNBUFFERED=1
 
   signalling:
     build: ./signalling
