@@ -17,12 +17,12 @@ DBSession = get_session(app.config["SQLALCHEMY_DATABASE_URI"])
 
 @app.route("/")
 def index():
-    return flask.render_template("index.html")
+    return flask.render_template("index.jinja")
 
 
 @app.route("/live")
 def play_stream():
-    return flask.render_template("live.html")
+    return flask.render_template("live.jinja")
 
 
 @app.route("/registry", methods=["GET", "POST"])
@@ -30,12 +30,12 @@ def registry():
     """Display the registry page accessible at '/registry'."""
     form = TimeFilterForm()
     if request.method == "GET":
-        return render_template("registry.html", form=form)
+        return render_template("registry.jinja", form=form)
     else:
         if form.validate_on_submit():
             events = RegistryStatistics.build_from_form(form, DBSession)
             print(f"Found {len(events.render())} events")
-            return render_template("registry.html", events=events.render(), form=form)
+            return render_template("registry.jinja", events=events.render(), form=form)
         else:
             raise ValueError  # TODO: 404
 
@@ -45,10 +45,10 @@ def stats():
     """Display the index page accessible at '/stats'."""
     form = TimeFilterForm()
     if request.method == "GET":
-        return render_template("stats.html", form=form)
+        return render_template("stats.jinja", form=form)
     else:
         if form.validate_on_submit():
             stats = EventStatistics.build_from_form(form, DBSession)
-            return render_template("stats.html", results=stats.render(), form=form)
+            return render_template("stats.jinja", results=stats.render(), form=form)
         else:
             raise ValueError  # TODO: 404

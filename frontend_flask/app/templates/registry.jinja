@@ -1,10 +1,9 @@
-{% extends "forms.html" %}
+{% extends "base.jinja" %}
 
-{% block title %}Estadisticas{% endblock %}
+{% block title %}Registro de Eventos{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="column">    
+
     <h1>Check Events</h1>
     <form action="" method="post">
         {{ form.hidden_tag() }}
@@ -21,14 +20,15 @@
         {{ form.camera_id(size=20) }}
         {{ form.submit() }}
     </form>
-</div>
-<div class="column">
-    {% if results %}
-    <h2>Total events: {{ results.object_count }} Events</h2>    
-    <h2>Total detections: {{ results.detection_count }}</h2>  
-    <body>
-        <img src="{{ url_for('static', filename='images/heatmap.png') }}" alt="Heatmap">
-      </body>  
-      </div>
+
+    {% if events %}
+         {% for event in events %}
+            <li>Date: {{ event.date }} </li>
+            <li>Time: {{ event.time }} </li>
+            <li>Zone: {{ event.area }} </li>
+            <li>Event: {{ event.type }} </li>
+            <li>Stored at: {{ event.video_path }} </li>
+        {% endfor %}
     {% endif %}
+
 {% endblock %}
