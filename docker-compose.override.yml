@@ -7,3 +7,5 @@ services:
     environment:
         - GST_DEBUG_DUMP_DOT_DIR=/opt/
         - GST_DEBUG_LOG_LEVEL=
+        - LOGLEVEL=info
+        

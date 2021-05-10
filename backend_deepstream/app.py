@@ -13,6 +13,12 @@ from app.play import application
 
 video_endpoint = Flask("RMCLabs")
 
+@video_endpoint.route('/ready', methods = ["GET"])
+def ready():
+    return {
+        "STATUS": f"OK",
+    }
+
 @video_endpoint.route('/list_cameras', methods = ["GET"])
 def list_cameras():
     print("CALLED: list_cameras")

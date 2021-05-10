@@ -25,7 +25,7 @@ class DDBBWriter(Consumer):
             important_detections = self.filter_detections(detection_metadata)
 
             if not len(important_detections):
-                return
+                return  # fixme shouldnt this be a continue??
 
             video_path = self.video_recorder.record(source_id)
             logger.info(f"Saving video at {video_path}")

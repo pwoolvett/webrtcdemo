@@ -9,6 +9,17 @@ services:
       - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf 
   
 
+  signalling:
+    image: rmclabs-io/ventanas-signalling
+    build: ./signalling
+    network_mode: "host"
+    depends_on:
+      - nginx
+    environment:
+      - SIGNALLING_HOST=0.0.0.0
+      - SIGNALLING_PORT=7003
+    
+
   backend:
     image: rmclabs-io/ventanas-backend_deepstream
     build:
@@ -23,7 +34,6 @@ services:
     restart: always
     environment:
       - DISPLAY=:0 
-      - PYTHONUNBUFFERED=
       - FLASK_RUN_HOST=0.0.0.0
       - FLASK_RUN_PORT=7001
  
@@ -38,17 +48,8 @@ services:
     depends_on:
       - signalling
       - nginx
+      - backend
     environment:
       - FLASK_RUN_HOST=0.0.0.0
       - FLASK_RUN_PORT=7002
 
-
-  signalling:
-    image: rmclabs-io/ventanas-signalling
-    build: ./signalling
-    network_mode: "host"
-    depends_on:
-      - nginx
-    environment:
-      - SIGNALLING_HOST=0.0.0.0
-      - SIGNALLING_PORT=7003

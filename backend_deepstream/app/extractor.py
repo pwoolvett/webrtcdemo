@@ -9,6 +9,7 @@ from pythiags.deepstream.parsers import detector_bbox
 
 
 class AnalyticsExtractor(Producer):
+
     def extract_metadata(self, pad, info):
         meta = {}
         for frame_metadata in frames_per_batch(info):
