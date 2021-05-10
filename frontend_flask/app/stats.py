@@ -19,7 +19,7 @@ datetime_from = datetime(2021, 4, 23, 17, 14, 0)
 datetime_to = datetime(2021, 4, 23, 17, 20, 0)
 
 BASE_IMAGES = {
-    0: Image.open(app.config["RESOURCES_PATH"] / "images" / "base_image.png")
+    0: Image.open(app.config["RESOURCES_PATH"] / "img" / "base_image.png")
 }
 IMAGE_SIZE = np.array(cv2.imread("base_image.png")).shape
 
