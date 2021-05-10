@@ -16,9 +16,8 @@ from app.recorder import VideoRecorder
 
 
 class Ventanas(Standalone):
-
     def run(self):
-        #TODO: ver como matar
+        # TODO: ver como matar
         self.loop = GObject.MainLoop()
         self.pipeline.set_state(Gst.State.PLAYING)
         # try:
@@ -29,6 +28,7 @@ class Ventanas(Standalone):
         #     raise
         # finally:
         #     self.stop()
+
 
 mem = _build_meta_map(
     "analytics",
@@ -43,16 +43,12 @@ application = Ventanas(pipeline_str, mem)
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
     peer_id=1,
-    server="ws://0.0.0.0:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
+    server="ws://0.0.0.0:8443",  # websocket uri  TODO: with net=host in docker-compose this wont work
     pipeline=application.pipeline,
-    connection_endpoint="connection"
+    connection_endpoint="connection",
 )
 
-video_recorder = VideoRecorder(
-    application.pipeline, 
-    fps=30, 
-    window_size=2
-    )
+video_recorder = VideoRecorder(application.pipeline, fps=30, window_size=2)
 
 extractor, consumer = mem["analytics"]
 consumer.set_video_recorder(video_recorder)

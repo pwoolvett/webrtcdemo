@@ -10,8 +10,9 @@ import sys
 from time import sleep
 
 import gi
-gi.require_version('Gst', '1.0')
-gi.require_version('GstApp', '1.0')
+
+gi.require_version("Gst", "1.0")
+gi.require_version("GstApp", "1.0")
 from gi.repository import Gst
 from gi.repository import GLib
 
@@ -22,26 +23,28 @@ from app.utils.utils import run_later
 
 Gst.init(None)
 
-FRAMES_PER_SECOND=30
-RUNTIME_MINUTES=20
+FRAMES_PER_SECOND = 30
+RUNTIME_MINUTES = 20
 
 # DO NOT THESE
 SEC_PER_MINUTE = 60
-RUNTIME_SECONDS=RUNTIME_MINUTES*SEC_PER_MINUTE
-NUM_BUF = RUNTIME_SECONDS*FRAMES_PER_SECOND
+RUNTIME_SECONDS = RUNTIME_MINUTES * SEC_PER_MINUTE
+NUM_BUF = RUNTIME_SECONDS * FRAMES_PER_SECOND
 
-DEFAULT_WINDOW_SIZE_SEC=2
+DEFAULT_WINDOW_SIZE_SEC = 2
 
-CAPS = ",".join([
-    "video/x-raw",
-    "format=YV12",
-    "width=1280",
-    "height=720",
-    f"framerate={FRAMES_PER_SECOND}/1",
-    # "multiview-mode=mono",
-    # "pixel-aspect-ratio=1/1",
-    # "interlace-mode=progressive",
-])
+CAPS = ",".join(
+    [
+        "video/x-raw",
+        "format=YV12",
+        "width=1280",
+        "height=720",
+        f"framerate={FRAMES_PER_SECOND}/1",
+        # "multiview-mode=mono",
+        # "pixel-aspect-ratio=1/1",
+        # "interlace-mode=progressive",
+    ]
+)
 
 
 PIPE_RAW = f"""
@@ -71,58 +74,60 @@ t1.
   async=false
 """
 
+
 class VideoRecorder:
     """
 
-        def demo_boilerplate():
+    def demo_boilerplate():
 
-            def build_pipeline():
-                pipeline_string = "\n".join(
-                    line.split("#",1)[0]
-                    for line in PIPE_RAW.split("\n")
-                    if not line.strip().startswith("#")
-                ).strip()
-                return Gst.parse_launch(pipeline_string)
+        def build_pipeline():
+            pipeline_string = "\n".join(
+                line.split("#",1)[0]
+                for line in PIPE_RAW.split("\n")
+                if not line.strip().startswith("#")
+            ).strip()
+            return Gst.parse_launch(pipeline_string)
 
-            def on_message(bus, message, loop, pipeline):
-                t = message.type
-                if t == Gst.MessageType.EOS:
-                    logger.info("End-of-stream\n")
-                    loop.quit()
-                elif t == Gst.MessageType.ERROR:
-                    err, debug = message.parse_error()
-                    logger.error("Error: %s: %s\n" % (err, debug))
-                    loop.quit()
-
-                return True
-
-            loop = GLib.MainLoop()
-
-            pipeline = build_pipeline()
-            pipeline_bus = pipeline.get_bus()
-            pipeline_bus.add_signal_watch()
-            pipeline_bus.connect("message", on_message, loop, pipeline)
-
-            pipeline.set_state(Gst.State.PLAYING)
-
-            return pipeline, loop
-
-        def main():
-            window_size = 2
-            pipeline, loop = demo_boilerplate()
-
-            rec = VideoRecorder(pipeline, FRAMES_PER_SECOND, window_size)
-
-
-            for delay in range(3, RUNTIME_SECONDS-window_size, 5):
-                run_later(rec.record, delay)
-
-            try:
-                loop.run()
-            finally:
+        def on_message(bus, message, loop, pipeline):
+            t = message.type
+            if t == Gst.MessageType.EOS:
+                logger.info("End-of-stream\n")
                 loop.quit()
-                pipeline.set_state(Gst.State.NULL)
+            elif t == Gst.MessageType.ERROR:
+                err, debug = message.parse_error()
+                logger.error("Error: %s: %s\n" % (err, debug))
+                loop.quit()
+
+            return True
+
+        loop = GLib.MainLoop()
+
+        pipeline = build_pipeline()
+        pipeline_bus = pipeline.get_bus()
+        pipeline_bus.add_signal_watch()
+        pipeline_bus.connect("message", on_message, loop, pipeline)
+
+        pipeline.set_state(Gst.State.PLAYING)
+
+        return pipeline, loop
+
+    def main():
+        window_size = 2
+        pipeline, loop = demo_boilerplate()
+
+        rec = VideoRecorder(pipeline, FRAMES_PER_SECOND, window_size)
+
+
+        for delay in range(3, RUNTIME_SECONDS-window_size, 5):
+            run_later(rec.record, delay)
+
+        try:
+            loop.run()
+        finally:
+            loop.quit()
+            pipeline.set_state(Gst.State.NULL)
     """
+
     RECORD_BIN_STRING = f"""
         appsrc
           name=appsrc
@@ -147,7 +152,6 @@ class VideoRecorder:
         RECORDING = "recording"
         FINISHING = "finishing"
 
-
     def __init__(
         self,
         pipeline,
@@ -164,7 +168,7 @@ class VideoRecorder:
         * Pipeline must have raw image bufers and contain an `appsink` named "appsink".
         * `self.appsrc.emit('push-buffer', gstbuf)` should push buffers
           ASAP, not in `on_new_sample` callback
-        
+
         """
         self.pipeline = pipeline
         self.fps = fps
@@ -179,13 +183,9 @@ class VideoRecorder:
 
         self.state = self.States.IDLE
 
-
-        self.deque = collections.deque(maxlen=fps*window_size)
+        self.deque = collections.deque(maxlen=fps * window_size)
         self.appsink = pipeline.get_by_name("appsink")
-        self.appsink.connect(
-            'new-sample',
-            self.on_new_sample
-        )
+        self.appsink.connect("new-sample", self.on_new_sample)
         self.appsrc = None
 
     def on_new_sample(self, *a) -> Gst.FlowReturn:
@@ -196,18 +196,20 @@ class VideoRecorder:
 
         buffer: Gst.Buffer = sample.get_buffer()
         buffer_size = buffer.get_size()
-        data=buffer.extract_dup(0, buffer_size)
+        data = buffer.extract_dup(0, buffer_size)
         self.deque.append(data)
 
         if self.state == self.States.RECORDING:
             try:
                 state = self.appsrc.get_state(Gst.CLOCK_TIME_NONE)
-                if Gst.State.PLAYING not in state:  # TODO: Warning: comparing different enum types: GstState and GstStateChangeReturn
+                if (
+                    Gst.State.PLAYING not in state
+                ):  # TODO: Warning: comparing different enum types: GstState and GstStateChangeReturn
                     logger.debug(f"NOPE - State: {state}")
                     return Gst.FlowReturn.OK
                 data = self.deque.popleft()
                 gstbuf = Gst.Buffer.new_wrapped(data)
-                self.appsrc.emit('push-buffer', gstbuf)
+                self.appsrc.emit("push-buffer", gstbuf)
             except AttributeError as exc:
                 logger.error(f"NO APPSRC: {exc}")
             except IndexError:
@@ -221,7 +223,8 @@ class VideoRecorder:
             self._pending_cancel = None
         self._pending_cancel = run_later(
             self._stop_recording,
-            2*self.window_size,  # once backwards (as incoming buffers are delayd by window_size), once into the future.
+            2
+            * self.window_size,  # once backwards (as incoming buffers are delayd by window_size), once into the future.
         )
 
     @traced(logger.debug)
@@ -235,7 +238,7 @@ class VideoRecorder:
         if self.state == self.States.IDLE:
             self.state = self.States.STARTING
 
-            self._record_count +=1
+            self._record_count += 1
             name = f"{self.running_since}_{self._record_count}"
             run_later(self._start_recording, 0, name=name)
             self.reset_stop_recording_timeout()
@@ -252,15 +255,15 @@ class VideoRecorder:
             r.join()
             return r._output
 
-
         if self.state == self.States.FINISHING:
-            logger.info(f"Recording finising previous state - re-scheduling record event")
+            logger.info(
+                f"Recording finising previous state - re-scheduling record event"
+            )
             r = run_later(self.record, 1e-3)
             r.join()
             return r._output
 
         raise NotImplementedError(f"Unhandled state: {self.state}")
-
 
     @property
     def current_video_location(self):
@@ -274,33 +277,24 @@ class VideoRecorder:
         prefix = "No record bin" if exist else "Record bin still present"
         msg = f"{prefix} after {(int(self.wait_start_msec/1e3))}[s]"
         for _ in range(niter):
-            if (
-                exist and bool(self.record_bin)
-            ) or (
+            if (exist and bool(self.record_bin)) or (
                 (not exist) and (not self.record_bin)
             ):
                 break
-            sleep(self.wait_start_msec/(niter*1e3))
+            sleep(self.wait_start_msec / (niter * 1e3))
         else:
             raise TimeoutError(msg)
         return
 
-
-
     @dotted
     @traced(logger.info)
     def _start_recording(self, name):
-        tee_sink = self.appsink.get_static_pad('sink')
+        tee_sink = self.appsink.get_static_pad("sink")
 
-        add = tee_sink.add_probe(
-            Gst.PadProbeType.BUFFER,
-            self._connect_bin,
-            name
-        )
+        add = tee_sink.add_probe(Gst.PadProbeType.BUFFER, self._connect_bin, name)
         if not add:
             logger.error("Could not add probe")
             sys.exit(42)
-
 
     @dotted
     @traced(logger.debug)
@@ -320,7 +314,7 @@ class VideoRecorder:
         if not self.record_bin.sync_children_states():
             logger.error("Could not sync record_bin with children")
             sys.exit(42)
-        self.appsrc = self.record_bin.get_by_name('appsrc')
+        self.appsrc = self.record_bin.get_by_name("appsrc")
         self.state = self.States.RECORDING
         return Gst.PadProbeReturn.REMOVE
 
@@ -342,7 +336,7 @@ class VideoRecorder:
             removed = self.pipeline.remove(self.record_bin)
             # Can't set the state of the src to NULL from its streaming thread
             GLib.idle_add(self._release_bin)
-            # record_bin.unref() TODO: use this if there are memleaks 
+            # record_bin.unref() TODO: use this if there are memleaks
             if not removed:
                 logger.error("BIN remove FAILED")
                 sys.exit(42)
@@ -355,7 +349,7 @@ class VideoRecorder:
             self.RECORD_BIN_STRING.format(
                 sink_location=f"{self.sink_location_prefix}{name}"
             ),
-            True
+            True,
         )
 
         filesink = self.record_bin.get_by_name("filesink")
@@ -384,16 +378,16 @@ class VideoRecorder:
             return
         self.state = self.States.FINISHING
         tee = self.pipeline.get_by_name("appsink")
-        tee_src = tee.get_static_pad('sink')
+        tee_src = tee.get_static_pad("sink")
         tee_src.add_probe(
             Gst.PadProbeType.BLOCK,
             self._disconnect_bin,
         )
 
+
 # s = pad.get_current_caps().get_structure(0)
 # width, height, fps = (
 #     s.get_value(cap)
-#     for cap in 
+#     for cap in
 #     ('width', "height", "framerate")
 # )
-

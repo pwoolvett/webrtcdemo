@@ -1,9 +1,9 @@
 import logging
-import os 
+import os
 
 from logging import getLogger
 
-LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 logging.basicConfig(level=LOGLEVEL)
 
 logger = getLogger("Pythia_API")
