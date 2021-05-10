@@ -1,14 +1,9 @@
-filesrc
-    location=/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.mp4
-! qtdemux
-! h264parse
-! nvv4l2decoder
-! m.sink_0
 nvstreammux
-    name=m
+    name=muxer
     width=1280
     height=720
     batch-size=1
+    batched-push-timeout=33333333
 ! nvinfer
     config-file-path=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/nvdsanalytics_pgie_config.txt
 ! nvtracker
@@ -20,11 +15,27 @@ nvstreammux
     config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/config_nvdsanalytics.txt
     name=analytics
 ! nvmultistreamtiler
+    name=tiler
     width=1280
     height=720
+    show-source=0
 ! nvvideoconvert
 ! nvdsosd
 ! tee name=t
+
+filesrc
+    location=/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.mp4
+! qtdemux
+! h264parse
+! nvv4l2decoder
+! muxer.sink_0
+
+filesrc
+    location=/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.mp4
+! qtdemux
+! h264parse
+! nvv4l2decoder
+! muxer.sink_1
 
 t.
 ! queue

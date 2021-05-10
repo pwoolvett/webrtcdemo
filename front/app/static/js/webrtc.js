@@ -7,6 +7,23 @@
  * Author: Nirbheek Chauhan <nirbheek@centricular.com>
  */
 
+
+
+// // // // // // // // // // //  UTILS // // // // // // // // // // // // // // // // // // 
+
+/**
+ * @param {String} HTML representing a single element
+ * @return {Element}
+ */
+ function htmlToElement(html) {
+    var template = document.createElement('template');
+    html = html.trim(); // Never return a text node of whitespace as the result
+    template.innerHTML = html;
+    return template.content.firstChild;
+}
+
+// // // // // // // // // // //  REFERENCE CODE // // // // // // // // // // // // // // // // // // 
+
 // Set this to override the automatic detection in websocketServerConnect()
 var ws_server;
 var ws_port;
@@ -109,11 +126,12 @@ function onIncomingICE(ice) {
     peer_connection.addIceCandidate(candidate).catch(setError);
 }
 
-function onServerMessage(event) {
+function onServerMessage(event, peer_id) {
     console.log("Received " + event.data);
     switch (event.data) {
         case "HELLO":
             setStatus("Registered with server, waiting for call");
+            requestCall(peer_id);
             return;
         default:
             if (event.data.startsWith("ERROR")) {
@@ -193,6 +211,8 @@ function getLocalStream() {
     }
 }
 
+
+
 function websocketServerConnect() {
     connect_attempts++;
     if (connect_attempts > 3) {
@@ -228,14 +248,22 @@ function websocketServerConnect() {
         setStatus("Registering with server");
     });
     ws_conn.addEventListener('error', onServerError);
-    ws_conn.addEventListener('message', onServerMessage);
+    ws_conn.addEventListener('message', event => onServerMessage(event, peer_id));
     ws_conn.addEventListener('close', onServerClose);
 }
 
+
 function onRemoteTrack(event) {
-    if (getVideoElement().srcObject !== event.streams[0]) {
+    var videoElement = getVideoElement();
+
+    if (videoElement.style.display === "none") {
+        videoElement.style.display = "block";
+        document.getElementById("videoProgressbar").style.display = "none";
+      }
+
+    if (videoElement.srcObject !== event.streams[0]) {
         console.log('Incoming stream');
-        getVideoElement().srcObject = event.streams[0];
+        videoElement.srcObject = event.streams[0];
     }
 }
 
@@ -253,7 +281,7 @@ const handleDataChannelMessageReceived = (event) =>{
     setStatus("Received data channel message");
     if (typeof event.data === 'string' || event.data instanceof String) {
         console.log('Incoming string message: ' + event.data);
-        textarea = document.getElementById("text")
+        textarea = document.getElementById("text");
         textarea.value = textarea.value + '\n' + event.data
     } else {
         console.log('Incoming data message');
@@ -317,4 +345,142 @@ function createCall(msg) {
         setStatus("Created peer connection for call, waiting for SDP");
 
     return local_stream_promise;
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+function listCameras(onsuccess, onFailure) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        console.log("RECEIVED RESPONSE");
+        response=this;
+        console.log(this);
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                onsuccess(this);
+
+            } else {
+                onFailure(this);
+            }
+        }
+    };
+    xhttp.open("GET", "/pythia-demo/list_cameras", true);
+    xhttp.send();
+}
+
+
+function changeCamera(camera_id, onSuccess, onFailure) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        console.log("RECEIVED RESPONSE");
+        response=this;
+        console.log(this);
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                onSuccess(this);
+            } else {
+                onFailure(this);
+            }
+        }
+    };
+    xhttp.open("GET", `/pythia-demo/focus_camera/${camera_id}`, true);
+    xhttp.send();
+}
+
+
+function hideVideoProgressbar() {
+    document.getElementById("videoProgressbar").style.display = "none";
+}
+
+function showVideoProgressbar() {
+    document.getElementById("videoProgressbar").style.display = "";
+}
+
+
+function showVideo() {
+    getVideoElement().style.display=""
+} 
+
+function requestCall(peer_id) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        console.log("RECEIVED CALL REQUEST RESPONSE");
+        response=this;
+        console.log(this);
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                onsuccess(this);
+            } else {
+                console.log("REQUEST FAILED");
+                console.log(this);
+            }
+        }
+    };
+    xhttp.open("GET", `/pythia-demo/start/${peer_id}`, true);
+    xhttp.send();
+}
+
+
+function hideVideoProgressbar() {
+    document.getElementById("videoProgressbar").style.display = "none";
+}
+
+function showVideoProgressbar() {
+    document.getElementById("videoProgressbar").style.display = "";
+}
+
+
+function showVideo() {
+    getVideoElement().style.display=""
+} 
+
+
+function setCameraSelectionButtons(cameras) {
+    //  TODO: attach to videoPlayer
+
+    onRadioButtonClick = function onRadioButtonClick(camera_id){
+        changeCamera(
+            camera_id,
+            function(xhttp){console.log("CHANGE CAMERA SUCESS")},
+            function(xhttp){console.log("CHANGE CAMERA FAILED")},
+        );
+    }
+
+    let cameraButtons = document.getElementById("cameraButtons")
+    cameraButtons.innerHTML = "";
+
+    for (const camera_id of cameras) {
+        let radioButton = htmlToElement(`
+            <label
+              class="mdl-radio mdl-js-radio mdl-js-ripple-effect"
+              for="option-${camera_id}"
+              onclick="onRadioButtonClick(${camera_id})"
+            >
+                <input type="radio" id="option-${camera_id}" class="mdl-radio__button" name="options" value="${camera_id}">
+                <span class="mdl-radio__label">Cámara ${camera_id}</span>
+            </label>        
+        `);
+        radioButton.onclick = button => onRadioButtonClick(camera_id);
+        cameraButtons.appendChild(radioButton);
+    }
+
+    return ;
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+function onLoad() {
+    listCameras(
+        function(xhttp){
+            console.log("STATUS OK");
+            let cameras = JSON.parse(xhttp.response)["cameras"];
+            hideVideoProgressbar();
+            showVideo();
+            setCameraSelectionButtons(cameras);
+            websocketServerConnect();
+        },
+        function(xhttp){
+            console.log("GOT not 200");
+            window.setTimeout(listCameras.bind(null, n+1), 1000);
+        }
+    );
 }

@@ -1,15 +1,23 @@
 version: '3'
 
 services:
+
+  nginx:
+    image: nginx:latest
+    network_mode: "host"
+    volumes:
+      - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf 
+  
+
   pythia-demo:
     image: rmclabs-io/pythia-demo
     build:
       context: .
       dockerfile: pythia_demo/Dockerfile
     volumes:
-      - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
+      - ./db:/db
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - /home/rmclabs/RMCLabs/webrtcdemo/debug/vids:/opt/vids
+      - ./debug/vids:/opt/vids
     network_mode: "host"
     runtime: nvidia
     restart: always
@@ -42,8 +50,7 @@ services:
       dockerfile: front/Dockerfile
     network_mode: "host"
     volumes:
-      - /home/rmclabs/RMCLabs/webrtcdemo/db:/db
-      - /home/rmclabs/RMCLabs/webrtcdemo/debug:/videos
+      - ./db:/db
     # ports:
     #   - 8080:8888
     depends_on:

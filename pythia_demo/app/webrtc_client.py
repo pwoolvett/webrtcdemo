@@ -155,15 +155,15 @@ class WebRTCClient:
     def __init__(
         self,
         id_: int,
-        peer_id: int,  # TODO: this should be defined in the callback so we do not have to hardcode it in js
-        server: str,  # websocket uri
-        pipeline: Gst.Pipeline,
-        connection_endpoint: str,
+        # peer_id: int,  # TODO: this should be defined in the callback so we do not have to hardcode it in js
+        server: str, # websocket uri
+        pipeline: Gst.Pipeline, 
+        connection_endpoint: str
     ):
-        self.id_ = id_
+        self.our_id = id_
         self.conn = None
         # self.webrtc = None
-        self.peer_id = peer_id
+        self.peer_id = None # peer_id
         if not server:
             raise ValueError
         self.server = server or "wss://webrtc.nirbheek.in:8443"
@@ -178,7 +178,7 @@ class WebRTCClient:
         else:
             sslctx = None
         self.conn = await websockets.connect(self.server, ssl=sslctx)
-        await self.conn.send("HELLO %d" % self.id_)
+        await self.conn.send("HELLO %d" % self.our_id)
 
     async def setup_call(self):
         await self.conn.send("SESSION {}".format(self.peer_id))
@@ -199,9 +199,9 @@ class WebRTCClient:
         loop.run_until_complete(self.conn.send(icemsg))
         loop.close()
 
-    def open_streaming_connection(
-        self,
-    ):
+
+    def open_streaming_connection(self, peer_id):
+        self.peer_id = peer_id
         client_loop = asyncio.get_event_loop()
         client_loop.run_until_complete(self.connect())
         start_asyncio_background(self.connection_monitor, client_loop)
