@@ -55,6 +55,8 @@ services:
     #   - 8080:8888
     depends_on:
       - signalling
+    environment:
+      - PYTHONUNBUFFERED=1
 
   signalling:
     build: ./signalling

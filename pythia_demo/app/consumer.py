@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 
 from pythiags import Consumer
 
@@ -12,7 +12,9 @@ from app.utils.dump import SELECTED_ROIS
 
 
 class DDBBWriter(Consumer):
-    def __init__(self, ):
+    def __init__(
+        self,
+    ):
         self.video_recorder = None
         self.selected_rois = SELECTED_ROIS
         self.Session = Session
@@ -31,7 +33,12 @@ class DDBBWriter(Consumer):
             logger.info(f"Saving video at {video_path}")
 
             # Check if event has already been registered
-            event_id = register_event(video_path, event_type="Trespassing", db_session=db_session, camera_id=source_id)
+            event_id = register_event(
+                video_path,
+                event_type="Trespassing",
+                db_session=db_session,
+                camera_id=source_id,
+            )
 
             registered_detections = []
             for detection in important_detections:
@@ -47,7 +54,6 @@ class DDBBWriter(Consumer):
             db_session.add(registered_frame)
         db_session.commit()
 
-
     def filter_detections(self, detections: list) -> list:
         # TODO use yield here instead
         important_detections = []
@@ -57,11 +63,9 @@ class DDBBWriter(Consumer):
             important_detections.append(detection)
         return important_detections
 
-
     def incoming(self, events):
         session = self.Session()
         self.dump_metadata(events, session)
 
-        
     def set_video_recorder(self, video_recorder):
         self.video_recorder = video_recorder

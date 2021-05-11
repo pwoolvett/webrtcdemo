@@ -17,9 +17,8 @@ from app.utils.utils import get_by_name_or_raise
 
 
 class Ventanas(Standalone):
-
     def run(self):
-        #TODO: ver como matar
+        # TODO: ver como matar
         self.loop = GObject.MainLoop()
         self.pipeline.set_state(Gst.State.PLAYING)
         # try:
@@ -67,7 +66,7 @@ gstreamer_webrtc_client = WebRTCClient(
     # peer_id=1,
     server="ws://0.0.0.0:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
     pipeline=application.pipeline,
-    connection_endpoint="connection"
+    connection_endpoint="connection",
 )
 
 video_recorder = VideoRecorder(

@@ -31,7 +31,7 @@ def focus_camera(camera_id:int):
         "response": response,
     }
 
-@video_endpoint.route('/record', methods = ["GET"])
+@video_endpoint.route("/record", methods=["GET"])
 def start_recording():
     logger.info("Received recording request")
     recorded_video_path = video_recorder.record()
@@ -59,9 +59,4 @@ def start_streaming(peer_id):
     # return {"ERROR_TYPE":"MULTIPLE ERRORS", "ERROR":errs}
 
 if __name__ == "__main__":
-    video_endpoint.run(
-        debug=False,
-        host="0.0.0.0",
-        port=8000,
-        threaded=False
-    )
+    video_endpoint.run(debug=False, host="0.0.0.0", port=8000, threaded=False)
