@@ -7,9 +7,13 @@ from typing import ContextManager, Tuple
 from PIL import Image
 from datetime import datetime
 from pathlib import Path
+
+from pandas.core.indexes.base import InvalidIndexError
 from app import app
 
-from app.utils.heatmap import MotionHeatmap
+import ray
+
+from app.utils.heatmap import GPUMotionHeatmap
 
 from app.models import Detection
 from app.models import Event
@@ -19,10 +23,10 @@ from app.models import get_session
 Session = get_session("sqlite:////db/test.db")
 
 BASE_IMAGES = {
-    0: Image.open(app.config["RESOURCES_PATH"] / "images" / "base_image.png")
+    0: cv2.imread(str(app.config["RESOURCES_PATH"] / "images" / "base_image.png"))
 }
 IMAGE_SIZE = np.array(cv2.imread("base_image.png")).shape
-
+GPU_FRACTION = 0.1
 
 class EventStatistics:
     def __init__(
@@ -121,7 +125,7 @@ class EventStatistics:
             "statistics": self.build_main_statistics(),
         }
 
-    def build_heatmap(
+    def compute_heatmap_values(
         self,
     ):
         """Overlay heatmap values to image.
@@ -129,21 +133,25 @@ class EventStatistics:
         Returns:
             np.array: Overlayed image.
         """
-        import multiprocessing
-        grouped_events = [*self.group_events()]
-        
-        with multiprocessing.Pool(processes=3) as pool:
-            heatmap_values = pool.apply(self.compute, grouped_events)
-        
-        # for event_id in self.events['id'].unique():
-        #     event = self.events[self.events.id==event_id]
-        #     filtered_detections = self.detections[self.detections.event_id==event_id]
-        #     print(f"Computing heatmap values for event {event.id.values}. {len(filtered_detections)} detections found")
-        #     heatmap_values = self.compute_heatmap_values(detections = filtered_detections, events=event)
-        return heatmap_values
+        import time
+        results = []
+        t0 = time.perf_counter()
+        for video_path, detection in [*self.group_events()]:
+            experiment_actor = self.compute_heatmap.remote(detection, video_path)
+            results.append(experiment_actor)
+        print(f"Heatmap computation time for {len( [*self.group_events()])} events: {time.perf_counter()-t0:.3f} s")
+        return results
 
-    def compute(self, args):
-        return self.compute_heatmap_values(*args)
+    def display_heatmap(self, frame:np.ndarray):
+        color_image = cv2.applyColorMap(
+            frame, cv2.COLORMAP_HOT
+        )  # Color motion image
+        overlayed_image = cv2.addWeighted(self.base_image, 0.7, color_image, 0.7, 0)
+        print(f"BASE: {self.base_image.shape}")
+        print(f"COLOR: {color_image.shape}")
+        save_path = self.images_path/"heatmap.png"
+        cv2.imwrite(str(save_path), overlayed_image)
+        return save_path
 
 
     def group_events(self, ):
@@ -153,25 +161,9 @@ class EventStatistics:
             filtered_detections = self.detections[self.detections.event_id==event_id]
             yield video_path, filtered_detections
         
-
-        # heatmap_base = None
-        # normalized_heatmap = cv2.normalize(
-        #     heatmap_values.T,
-        #     heatmap_base,
-        #     alpha=0,
-        #     beta=255,
-        #     norm_type=cv2.NORM_MINMAX,
-        #     dtype=cv2.CV_8U,
-        # )
-        # base_image = cv2.cvtColor(np.array(self.base_image), cv2.COLOR_RGB2BGR)
-        # heatmap = cv2.applyColorMap(normalized_heatmap, cv2.COLORMAP_JET)
-        # overlayed_image = cv2.addWeighted(heatmap, 0.7, base_image, 0.3, 0)
-        # heatmap_path = self.images_path / "heatmap.png"
-        # cv2.imwrite(str(heatmap_path), overlayed_image)
-        # return str(heatmap_path)
-
     @staticmethod
-    def compute_heatmap_values(
+    @ray.remote(num_gpus=GPU_FRACTION)
+    def compute_heatmap(
         detections: pd.DataFrame, video_path: str
     ) -> np.ndarray:
         """Compute a motion heatmap for a single event.
@@ -183,17 +175,10 @@ class EventStatistics:
         Returns:
             np.ndarray: Motion heatmap values, for the given event.
         """
-        import time
-        t0 = time.perf_counter()
-        heatmap = MotionHeatmap(detections=detections, source_path=video_path)
+        heatmap = GPUMotionHeatmap(detections=detections, source_path=video_path, maxsize=100)
+        if not heatmap.video_reader:
+            return 
         heatmap_values = heatmap()
-        print(f"Heatmap values computation time: {time.perf_counter()-t0:.3f} s")
-        # masked_values = (
-        #     self.detections[["x_min", "x_max", "y_min", "y_max"]]
-        #     .astype("int")
-        #     .apply(self.mask, axis=1)
-        #     .sum()
-        # )
         return heatmap_values  # 1 / masked_values.max() * masked_values
 
     def build_timeline(self, frequency: str = "1min"):
@@ -226,7 +211,10 @@ class EventStatistics:
         self,
     ):
         descriptive_statistics = self.get_statistics()
-        heatmap_location = self.build_heatmap()
+        compute_references = self.compute_heatmap_values()
+        heatmap_values = [result for result in ray.get(compute_references) if result is not None]
+        frame = sum(heatmap_values)
+        heatmap_location = self.display_heatmap(frame)
         return dict(
             heatmap=heatmap_location,
             object_count=descriptive_statistics["object_count"],

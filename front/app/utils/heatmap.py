@@ -7,6 +7,8 @@ from pathlib import Path
 import pandas as pd
 
 from app.utils.video import VideoReader
+from app.utils.logger import logger
+
 pd.options.mode.chained_assignment = None
 
 FPS = 30
@@ -21,7 +23,7 @@ class MotionHeatmap:
         debug: bool = False,
         image_threshold: int = 2,
         max_value: int = 2,
-        logger: logging.Logger=logging.getLogger()
+        logger: logging.Logger=logger
     ) -> None:
         """Base MotionHeatmap class.
 
@@ -37,13 +39,18 @@ class MotionHeatmap:
             max_value (int): #TODO Find out jeje
         """
         self.detections = detections
+        self.detections[["frame_number", "x_min", "y_min", "x_max", "y_max"]] = self.detections[["frame_number", "x_min", "y_min", "x_max", "y_max"]].apply(lambda x: pd.to_numeric(x, downcast='unsigned'))  # FIXME detections should be saved as integers from the very beginning
+            #FIXME OFFSET does not sync correctly
+        self.detections["frame_number"] += FPS * WINDOW_SIZE  # Add window offset
+        
         self.debug = debug
         self.image_threshold = image_threshold
         self.max_value = max_value
         self.logger = logger
+        
         if save_path:
             self.save_path = Path(save_path).resolve()
-        
+    
     def __call__(
         self,
     ):
@@ -60,7 +67,6 @@ class MotionHeatmap:
         if hasattr(self, 'save_path'):
             x = self.colormap(processed_image)
             cv2.imwrite(str(self.save_path / "heatmap.png"), x)
-            return x
         return processed_image
 
     def save_results(self, processed_image:np.ndarray)-> None:
@@ -97,8 +103,8 @@ class CPUMotionHeatmap(MotionHeatmap):
             image_threshold (int): Image threshold for masking.
             max_value (int): #TODO Find out jeje
         """
-        super().__init__(detections=detections, source_path=source_path, save_path=save_path, debug=debug, image_threshold=image_threshold, max_value=max_value)
-        self.video_reader, self.substractor = self.setup(Path(source_path.resolve()))
+        super().__init__(detections=detections, source_path=source_path, save_path=save_path, debug=debug, image_threshold=image_threshold, max_value=max_value, **kwargs)
+        self.video_reader, self.substractor = self.setup(Path(source_path).resolve())
 
     def setup(
         self,
@@ -112,27 +118,15 @@ class CPUMotionHeatmap(MotionHeatmap):
         Returns:
             [tuple]: OpenCV's video reader, video writer and background substraction.
         """
-        video_reader = VideoReader(video_file=source_path, backend="cpu").start()
+        try:
+            video_reader = VideoReader(video_file=source_path, backend="cpu", maxsize=100).start()
+        except ValueError:
+            self.logger.error(f"Corrupt video. Please check the file at {source_path}")
+            return None, None
         frame = video_reader.read()
         self.first_frame = copy.deepcopy(frame)
         substractor = cv2.bgsegm.createBackgroundSubtractorMOG()
         self.cumulative_image = np.zeros((video_reader.height, video_reader.width), np.uint8)
-        
-        self.detections.loc[:, "frame_number"] = self.detections.loc[
-            :, "frame_number"
-        ].apply(
-            lambda x: int(x) + FPS * WINDOW_SIZE
-        )  # Add window offset
-        self.detections.loc[
-            :, ["x_min", "y_min", "x_max", "y_max"]
-        ] = self.detections.loc[:, ["x_min", "y_min", "x_max", "y_max"]].astype(
-            "int"
-        )  # FIXME detections should be saved as integers from the very beginning
-            #FIXME OFFSET does not sync correctly
-        
-        self.logger.info(
-            f"Processing video ({video_reader.width}x{video_reader.height}) with {video_reader.frame_number} frames"
-        )
         return video_reader, substractor
 
 
@@ -169,9 +163,6 @@ class CPUMotionHeatmap(MotionHeatmap):
             cv2.imwrite(
                 f"{self.save_video_location}/cumulative/{idx:04d}.jpg",
                 self.cumulative_image,
-            )
-            cv2.imwrite(
-                f"{self.save_video_location}/overlayed/{idx:04d}.jpg", overlayed_image
             )
         return self.cumulative_image
 
@@ -219,7 +210,8 @@ class GPUMotionHeatmap(MotionHeatmap):
         save_path: Path = None,
         debug: bool = False,
         image_threshold: int = 2,
-        max_value: int = 2
+        max_value: int = 2, 
+        **video_reader_kwargs
     ) -> None:
         """Initialize a MotionHeatmap instance.
 
@@ -235,7 +227,8 @@ class GPUMotionHeatmap(MotionHeatmap):
             max_value (int): #TODO Find out jeje
         """
         super().__init__(detections=detections, source_path=source_path, save_path=save_path, debug=debug, image_threshold=image_threshold, max_value=max_value)
-        self.video_reader, self.substractor = self.setup(Path(source_path.resolve()))
+        self.video_reader_kwargs = video_reader_kwargs
+        self.video_reader, self.substractor = self.setup(Path(source_path).resolve())
 
     def setup(
         self,
@@ -249,30 +242,19 @@ class GPUMotionHeatmap(MotionHeatmap):
         Returns:
             [tuple]: OpenCV's video reader, video writer and background substraction.
         """
-        video_reader = VideoReader(video_file=source_path, backend="gpu").start()
+        try:
+            video_reader = VideoReader(video_file=source_path, backend="gpu", **self.video_reader_kwargs).start()
+        except ValueError:
+            self.logger.error(f"Corrupt video. Please check the file at {source_path}")
+            return None, None
         frame = video_reader.read()
         self.stream = cv2.cuda_Stream()
         self.first_frame = copy.deepcopy(frame.download())
         substractor = cv2.cuda.createBackgroundSubtractorMOG()
         self.cumulative_image = cv2.cuda_GpuMat(np.zeros((video_reader.height, video_reader.width), np.uint8))
-        
-        self.detections.loc[:, "frame_number"] = self.detections.loc[
-            :, "frame_number"
-        ].apply(
-            lambda x: int(x) + FPS * WINDOW_SIZE
-        )  # Add window offset
-        self.detections.loc[
-            :, ["x_min", "y_min", "x_max", "y_max"]
-        ] = self.detections.loc[:, ["x_min", "y_min", "x_max", "y_max"]].astype(
-            "int"
-        )  # FIXME detections should be saved as integers from the very beginning
-            #FIXME OFFSET does not sync correctly
-        
-        self.logger.info(
-            f"Processing video ({video_reader.width}x{video_reader.height}) with {video_reader.frame_number} frames"
-        )
         return video_reader, substractor
-
+        
+        
     def process(self, frame: np.ndarray, detections: pd.DataFrame, idx: int):
         grayscale_frame = cv2.cuda.cvtColor(frame, cv2.COLOR_BGR2GRAY)# convert to grayscale
         
@@ -349,6 +331,9 @@ class GPUMotionHeatmap(MotionHeatmap):
         overlayed_image = cv2.addWeighted(self.first_frame.download(), 0.7, color_image, 0.7, 0)
         return overlayed_image
 
+    def __call__(self):
+        processed_image = super().__call__()
+        return processed_image.download()
 
 
 if __name__ == "__main__":
