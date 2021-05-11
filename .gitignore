@@ -57,3 +57,5 @@ __pycache__
 db/*
 debug/vids/
 frontend_flask/app/static/img/heatmap.png
+debug/dots/*.dot
+videos/

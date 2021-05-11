@@ -82,5 +82,5 @@ WORKDIR /opt
 ENV SECRET_KEY="RMCLabsDVEN2021"
 ENV PYTHONUNBUFFERED=1
 
-ENTRYPOINT ["python", "app.py"]
+ENTRYPOINT ["python3", "app.py"]
 CMD []

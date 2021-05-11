@@ -16,6 +16,8 @@ from app.recorder import MultiVideoRecorder
 from app.utils.utils import get_by_name_or_raise
 from app.utils.utils import pipe_from_file
 
+from logger import logger
+
 class Ventanas(Standalone):
     def run(self):
         # TODO: ver como matar
@@ -90,6 +92,7 @@ video_recorder = MultiVideoRecorder(
     pipeline=application.pipeline,
     fps=30,
     window_size=2,
+    sink_location_prefix="/videos/event_"
 )
 
 extractor, consumer = mem["analytics"]

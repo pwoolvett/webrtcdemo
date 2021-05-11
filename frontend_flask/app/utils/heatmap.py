@@ -40,7 +40,9 @@ class MotionHeatmap:
             max_value (int): #TODO Find out jeje
         """
         self.detections = detections
-        self.detections[["frame_number", "x_min", "y_min", "x_max", "y_max"]] = self.detections[["frame_number", "x_min", "y_min", "x_max", "y_max"]].apply(lambda x: pd.to_numeric(x, downcast='unsigned'))  # FIXME detections should be saved as integers from the very beginning
+
+        cols=["frame_number", "x_min", "y_min", "x_max", "y_max"]
+        self.detections[cols] = self.detections[cols].apply(lambda x: pd.to_numeric(x, downcast='unsigned'))  # FIXME detections should be saved as integers from the very beginning
             #FIXME OFFSET does not sync correctly
         self.detections["frame_number"] += FPS * WINDOW_SIZE  # Add window offset
         
@@ -56,6 +58,8 @@ class MotionHeatmap:
         self,
     ):
         frame_count = 0
+        if not self.video_reader:
+            return 
         while self.video_reader.more():
             frame = self.video_reader.read()
             corresponding_detections = self.detections[
@@ -342,23 +346,25 @@ class GPUMotionHeatmap(MotionHeatmap):
 
     def __call__(self):
         processed_image = super().__call__()
+        if processed_image is None:
+            return
         return processed_image.download()
 
 
 if __name__ == "__main__":
     all_detections = pd.read_pickle(
-        "/home/rmclabs/RMCLabs/webrtcdemo/db/selected_detections.pkl"
+        "/db/selected_detections.pkl"
     )
     all_events = pd.read_pickle(
-        "/home/rmclabs/RMCLabs/webrtcdemo/db/selected_events.pkl"
+        "/db/selected_events.pkl"
     )
     event_id = 10
     detections = all_detections[all_detections.event_id == event_id]
-    video_path = f"/home/rmclabs/RMCLabs/webrtcdemo/debug/{str(all_events[all_events.id==event_id].evidence_video_path.values[0])}"
+    video_path = f"/db/debug/{str(all_events[all_events.id==event_id].evidence_video_path.values[0])}"
     
-    heatmap = MotionHeatmap(
+    heatmap = GPUMotionHeatmap(
         source_path=Path(video_path).resolve(),
-        save_path=Path("/home/rmclabs/RMCLabs/webrtcdemo/debug/heatmap"),
+        save_path=Path("/db/debug/heatmap"),
         detections=detections,
         debug=False,
     )

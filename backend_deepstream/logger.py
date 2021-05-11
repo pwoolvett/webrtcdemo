@@ -5,13 +5,13 @@ from logging import getLogger
 import os
 
 
-def force_kivy_release_root_logger():
+def force_kivy_release_root_logger(root_log_level):
     from kivy.logger import Logger
-    logging.root = RootLogger(LOGLEVEL)  # undo KIVY LOGGER taking full control
+    logging.root = RootLogger(root_log_level)  # undo KIVY LOGGER taking full control
 
 def build(name="GstBackend"):
     LOGLEVEL = getattr(logging, os.environ.get('LOGLEVEL', 'INFO').upper())
-    force_kivy_release_root_logger()
+    force_kivy_release_root_logger(root_log_level=LOGLEVEL)
     
     logging.basicConfig(
         level=LOGLEVEL,

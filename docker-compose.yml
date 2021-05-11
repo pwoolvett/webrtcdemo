@@ -1,5 +1,6 @@
 version: '3'
 
+
 services:
 
   nginx:
@@ -28,7 +29,7 @@ services:
     volumes:
       - ./db:/db
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./debug/vids:/opt/vids
+      - ./videos:/videos
     network_mode: "host"
     runtime: nvidia
     restart: always
@@ -43,8 +44,10 @@ services:
       context: .
       dockerfile: frontend_flask/Dockerfile
     network_mode: "host"
+    runtime: nvidia
     volumes:
       - ./db:/db
+      - ./videos:/videos
     depends_on:
       - signalling
       - nginx

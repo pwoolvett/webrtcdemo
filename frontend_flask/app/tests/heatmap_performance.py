@@ -61,7 +61,7 @@ def ray_main(actors, experiment):
 if __name__=="__main__":
     ray.init()
     
-    videos_path = Path("/videos")
+    videos_path = VIDEOS_PATH
     detections_path = Path("/db/selected_detections.pkl")
     events_path = Path("/db/selected_events.pkl")
 

@@ -158,7 +158,7 @@ class VideoRecorder:
         pipeline,
         fps,
         window_size=DEFAULT_WINDOW_SIZE_SEC,
-        sink_location_prefix="vids/out_",
+        sink_location_prefix="/videos/out_",
         wait_start_msec=3000,
         running_since=None,
         appsink_name="appsink",

@@ -24,8 +24,8 @@
 </div>
 <div class="column">
     {% if results %}
-    <h2>Total events: {{ results.object_count }} Events</h2>    
-    <h2>Total detections: {{ results.detection_count }}</h2>  
+    <h2>Se ha detectado un total de {{ results.event_count }} infracciones potenciales</h2>    
+    <h2>generadas por {{ results.object_count }} personas detectadas</h2>
     <body>
         <img src="{{ url_for('static', filename='img/heatmap.png') }}" alt="Heatmap">
       </body>  

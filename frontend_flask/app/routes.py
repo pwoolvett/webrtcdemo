@@ -34,8 +34,9 @@ def registry():
     else:
         if form.validate_on_submit():
             events = RegistryStatistics.build_from_form(form, DBSession)
-            print(f"Found {len(events.render())} events")
-            return render_template("registry.jinja", events=events.render(), form=form)
+            rendered=events()
+            print(f"Found {len(rendered)} events")
+            return render_template("registry.jinja", events=rendered, form=form)
         else:
             raise ValueError  # TODO: 404
 
@@ -49,6 +50,7 @@ def stats():
     else:
         if form.validate_on_submit():
             stats = EventStatistics.build_from_form(form, DBSession)
-            return render_template("stats.jinja", results=stats.render(), form=form)
+            rendered=stats()
+            return render_template("stats.jinja", results=rendered, form=form)
         else:
             raise ValueError  # TODO: 404

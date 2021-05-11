@@ -23,8 +23,12 @@ from app.models import get_session
 Session = get_session("sqlite:////db/test.db")
 
 BASE_IMAGES = {
-    0: cv2.imread(str(app.config["RESOURCES_PATH"] / "images" / "base_image.png"))
+    0: cv2.imread(str(app.config["RESOURCES_PATH"] / "img" / "base_image.png")),
+    1: cv2.imread(str(app.config["RESOURCES_PATH"] / "img" / "base_image.png"))
 }
+# TODO: configure this dynamically from database
+# TODO: do not preload the images
+
 IMAGE_SIZE = np.array(cv2.imread("base_image.png")).shape
 GPU_FRACTION = 0.1
 
@@ -136,19 +140,24 @@ class EventStatistics:
         import time
         results = []
         t0 = time.perf_counter()
-        for video_path, detection in [*self.group_events()]:
+
+        grouped = [*self.group_events()]
+        for video_path, detection in grouped:
+            if detection is None:
+                print(f"SKIPPING {video_path} - REASON: detection is `None`")
+                continue
             experiment_actor = self.compute_heatmap.remote(detection, video_path)
             results.append(experiment_actor)
-        print(f"Heatmap computation time for {len( [*self.group_events()])} events: {time.perf_counter()-t0:.3f} s")
+        print(f"Heatmap computation time for {len(grouped)} events: {time.perf_counter()-t0:.3f} s")
         return results
 
     def display_heatmap(self, frame:np.ndarray):
         color_image = cv2.applyColorMap(
             frame, cv2.COLORMAP_HOT
         )  # Color motion image
-        overlayed_image = cv2.addWeighted(self.base_image, 0.7, color_image, 0.7, 0)
-        print(f"BASE: {self.base_image.shape}")
         print(f"COLOR: {color_image.shape}")
+        print(f"BASE: {self.base_image.shape}")
+        overlayed_image = cv2.addWeighted(self.base_image, 0.7, color_image, 0.7, 0)
         save_path = self.images_path/"heatmap.png"
         cv2.imwrite(str(save_path), overlayed_image)
         return save_path
@@ -176,8 +185,6 @@ class EventStatistics:
             np.ndarray: Motion heatmap values, for the given event.
         """
         heatmap = GPUMotionHeatmap(detections=detections, source_path=video_path, maxsize=100)
-        if not heatmap.video_reader:
-            return 
         heatmap_values = heatmap()
         return heatmap_values  # 1 / masked_values.max() * masked_values
 
@@ -204,7 +211,7 @@ class EventStatistics:
         """
         return dict(
             object_count=len(self.detections.tracked_object_id.value_counts()),
-            detection_count=len(self.detections),
+            event_count=len(self.detections.event_id.unique()),
         )
 
     def __call__(
@@ -213,10 +220,13 @@ class EventStatistics:
         descriptive_statistics = self.get_statistics()
         compute_references = self.compute_heatmap_values()
         heatmap_values = [result for result in ray.get(compute_references) if result is not None]
-        frame = sum(heatmap_values)
-        heatmap_location = self.display_heatmap(frame)
+        if not heatmap_values:
+            heatmap_location = str(app.config["RESOURCES_PATH"] / "images" / "base_image.png")
+        else:
+            frame = sum(heatmap_values)  # TODO ponderar
+            heatmap_location = self.display_heatmap(frame)
         return dict(
             heatmap=heatmap_location,
+            event_count=descriptive_statistics["event_count"],
             object_count=descriptive_statistics["object_count"],
-            detection_count=descriptive_statistics["detection_count"],
         )
