@@ -56,3 +56,4 @@ __pycache__
 **/*venv
 db/*
 debug/vids/
+frontend_flask/app/static/img/heatmap.png

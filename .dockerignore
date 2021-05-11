@@ -1,9 +1,9 @@
 **/*venv/
-.git
 .dockerignore
+.git
 .gitignore
-.contextls
 README.md
 db/
 debug/
-docker-compose*
+.contextls
+docker-compose*.yml*

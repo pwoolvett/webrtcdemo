@@ -9,11 +9,22 @@ services:
       - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf 
   
 
-  pythia-demo:
-    image: rmclabs-io/pythia-demo
+  signalling:
+    image: rmclabs-io/ventanas-signalling
+    build: ./signalling
+    network_mode: "host"
+    depends_on:
+      - nginx
+    environment:
+      - SIGNALLING_HOST=0.0.0.0
+      - SIGNALLING_PORT=7003
+    
+
+  backend:
+    image: rmclabs-io/ventanas-backend_deepstream
     build:
       context: .
-      dockerfile: pythia_demo/Dockerfile
+      dockerfile: backend_deepstream/Dockerfile
     volumes:
       - ./db:/db
       - /tmp/.X11-unix:/tmp/.X11-unix
@@ -23,43 +34,21 @@ services:
     restart: always
     environment:
       - DISPLAY=:0 
-      - PYTHONUNBUFFERED=1
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=7001
  
-  # sendrecv-gst:
-  #   volumes:
-  #     - /tmp/.X11-unix:/tmp/.X11-unix
-  #   network_mode: "host"
-  #   build: ./sendrecv/gst
-  #   # ports:
-  #   #   - 8000:8000
-  #   runtime: nvidia
-  #   restart: always
-  #   environment:
-  #     - DISPLAY=:0 
-
-  # sendrecv-js:
-  #   build: ./sendrecv/js
-  #   ports:
-  #     - 8080:80
-  #   depends_on:
-  #     - signalling
-
-  flask-front:
+  frontend:
+    image: rmclabs-io/ventanas-app_flask
     build:
       context: .
-      dockerfile: front/Dockerfile
+      dockerfile: frontend_flask/Dockerfile
     network_mode: "host"
     volumes:
       - ./db:/db
-    # ports:
-    #   - 8080:8888
     depends_on:
       - signalling
+      - nginx
+      - backend
     environment:
-      - PYTHONUNBUFFERED=1
-
-  signalling:
-    build: ./signalling
-    network_mode: "host"
-    # ports:
-    #   - 9443:8443
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=7002

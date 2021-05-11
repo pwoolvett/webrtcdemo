@@ -71,10 +71,15 @@ class Streamer:
         # See: host, port in https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.create_server
         parser.add_argument(
             "--addr",
-            default="",
+            default=os.environ["SIGNALLING_HOST"],
             help="Address to listen on (default: all interfaces, both ipv4 and ipv6)",
         )
-        parser.add_argument("--port", default=8443, type=int, help="Port to listen on")
+        parser.add_argument(
+            "--port",
+            default=os.environ["SIGNALLING_PORT"],
+            type=int,
+            help="Port to listen on"
+        )
         parser.add_argument(
             "--keepalive-timeout",
             dest="keepalive_timeout",
