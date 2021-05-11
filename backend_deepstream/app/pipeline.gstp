@@ -3,6 +3,7 @@ filesrc
 ! qtdemux
 ! h264parse
 ! nvv4l2decoder
+! queue
 ! muxer.sink_0
 
 filesrc
@@ -10,6 +11,7 @@ filesrc
 ! qtdemux
 ! h264parse
 ! nvv4l2decoder
+! queue
 ! muxer.sink_1
 
 
@@ -18,7 +20,7 @@ nvstreammux
     width=1280
     height=720
     batch-size=2
-    batched-push-timeout=33333333
+    batched-push-timeout=33333
 ! nvinfer
     config-file-path=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/nvdsanalytics_pgie_config.txt
     batch-size=2
@@ -37,8 +39,8 @@ analytics_tee.
 ! queue
 ! nvmultistreamtiler
     name=tiler
-    width=1920
-    height=1080
+    width=1280
+    height=720
     show-source=-1
 ! nvvideoconvert
 ! nvdsosd

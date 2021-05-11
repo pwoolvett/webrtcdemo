@@ -68,7 +68,7 @@ gstreamer_webrtc_client = WebRTCClient(
     id_=105,
     # peer_id=1,
     # server="ws://0.0.0.0:9999/signalling", # websocket uri  TODO: with net=host in docker-compose this wont work
-    server="ws://localhost:7003", # websocket uri
+    server="wss://localhost:7003", # websocket uri
     pipeline=application.pipeline,
     connection_endpoint="connection",
 )
@@ -97,3 +97,13 @@ video_recorder = MultiVideoRecorder(
 
 extractor, consumer = mem["analytics"]
 consumer.set_video_recorder(video_recorder)
+
+# self=application
+# try:
+#     self.loop.run()
+# except Exception as exc:
+#     logger.warning("Exc")
+#     logger.error(exc)
+#     raise
+# finally:
+#     self.stop()

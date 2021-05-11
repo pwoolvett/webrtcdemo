@@ -234,9 +234,10 @@ class VideoRecorder:
             * self.window_size,  # once backwards (as incoming buffers are delayd by window_size), once into the future.
         )
 
-    @traced(logger.debug)
+    @traced(print)
     def record(self):
-
+        print(f"self.state: {self.state}")
+        print(f"self.pipeline.get_state(None): {self.pipeline.get_state(Gst.CLOCK_TIME_NONE)}")
         # avoid race condition when two threads call same code
         if self._pending_cancel:
             self._pending_cancel.cancel()
@@ -253,17 +254,18 @@ class VideoRecorder:
             return self.current_video_location
 
         if self.state == self.States.RECORDING:
+            print(f"Recording already recording...")
             self.reset_stop_recording_timeout()
             return self.current_video_location
 
         if self.state == self.States.STARTING:
-            logger.info(f"Recording already starting - rescheduling...")
+            print(f"Recording already starting - rescheduling...")
             r = run_later(self.record, 1)
             r.join()
             return r._output
 
         if self.state == self.States.FINISHING:
-            logger.info(
+            print(
                 f"Recording finising previous state - re-scheduling record event"
             )
             r = run_later(self.record, 1e-3)

@@ -30,7 +30,7 @@ class DDBBWriter(Consumer):
                 continue
 
             video_path = self.video_recorder.record(source_id)
-            logger.info(f"Saving video at {video_path}")
+            #print(f"Saving video at {video_path}")
 
             # Check if event has already been registered
             event_id = register_event(
