@@ -5,6 +5,8 @@ from queue import Queue
 from pathlib import Path
 
 
+from app.utils.logger import logger
+
 class VideoReader:
     def __init__(self, video_file: Path, maxsize: int=500, backend: str="cpu") -> None:
         if not backend.lower() in ['cpu', 'gpu']:
@@ -15,6 +17,7 @@ class VideoReader:
         self.stopped = False
         self.thread = Thread(target=self.update, args=())
         self.thread.daemon = True
+        self.logger = logger
     
     def setup(self, video_path:str)->cv2.VideoCapture:
         """Check wether the video stream is corrupt and initialize video stream and properties.
@@ -25,18 +28,20 @@ class VideoReader:
         Returns:
             cv2.VideoCapture: Video streamer.
         """
+        if not Path(video_path).exists():
+            raise FileNotFoundError(f"No video found at {video_path}")
         test_video_streamer = cv2.VideoCapture(video_path)
         opened_video, _ = test_video_streamer.read()
         if not opened_video:
             raise ValueError(f"Could not open video at {video_path}. Corrupt file")
-        
+
         #Set relevant video properties
         self.height = int(test_video_streamer.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.width = int(test_video_streamer.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.fps = int(test_video_streamer.get(cv2.CAP_PROP_FPS))
         self.frame_number = int(test_video_streamer.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        print(f"Video details: ({self.width}x{self.height}). {self.frame_number} frames")
+        logger.debug(f"Video details: ({self.width}x{self.height}). {self.frame_number} frames")
         #Cleanup to avoid losing first frame
         test_video_streamer.release()
         return cv2.VideoCapture(video_path)
@@ -55,16 +60,13 @@ class VideoReader:
         while True:
             if self.stopped:
                 break
-            if not self.queue.full():
-                ret, frame = self.video_stream.read()
-                if not ret:
-                    self.stopped = True
-                    break
-                if self.backend == "gpu":
-                    frame = cv2.cuda_GpuMat(frame)
-                self.queue.put(frame)
-            else:
-                time.sleep(0.1)
+            ret, frame = self.video_stream.read()
+            if not ret:
+                self.stopped = True
+                break
+            if self.backend == "gpu":
+                frame = cv2.cuda_GpuMat(frame)
+            self.queue.put(frame, timeout=None)
         self.video_stream.release()
     
     def read(self):
