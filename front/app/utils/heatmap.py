@@ -8,6 +8,7 @@ import pandas as pd
 
 from app.utils.video import VideoReader
 from app.utils.logger import logger
+from app.utils.exceptions import CorruptFileError
 
 pd.options.mode.chained_assignment = None
 
@@ -89,6 +90,7 @@ class CPUMotionHeatmap(MotionHeatmap):
         debug: bool = False,
         image_threshold: int = 2,
         max_value: int = 2,
+        **video_reader_kwargs
     ) -> None:
         """Initialize a MotionHeatmap instance.
 
@@ -104,6 +106,7 @@ class CPUMotionHeatmap(MotionHeatmap):
             max_value (int): #TODO Find out jeje
         """
         super().__init__(detections=detections, source_path=source_path, save_path=save_path, debug=debug, image_threshold=image_threshold, max_value=max_value, **kwargs)
+        self.video_reader_kwargs = video_reader_kwargs
         self.video_reader, self.substractor = self.setup(Path(source_path).resolve())
 
     def setup(
@@ -119,9 +122,12 @@ class CPUMotionHeatmap(MotionHeatmap):
             [tuple]: OpenCV's video reader, video writer and background substraction.
         """
         try:
-            video_reader = VideoReader(video_file=source_path, backend="cpu", maxsize=100).start()
-        except ValueError:
-            self.logger.error(f"Corrupt video. Please check the file at {source_path}")
+            video_reader = VideoReader(video_file=source_path, backend="cpu", **self.video_reader_kwargs).start()
+        except FileNotFoundError:
+            self.logger.warning(f"Video file not found. Please check the file at {source_path}")
+            return None, None
+        except CorruptFileError:
+            self.logger.warning(f"Corrupt video. Please check the file at {source_path}")
             return None, None
         frame = video_reader.read()
         self.first_frame = copy.deepcopy(frame)
@@ -244,8 +250,11 @@ class GPUMotionHeatmap(MotionHeatmap):
         """
         try:
             video_reader = VideoReader(video_file=source_path, backend="gpu", **self.video_reader_kwargs).start()
-        except ValueError:
-            self.logger.error(f"Corrupt video. Please check the file at {source_path}")
+        except FileNotFoundError:
+            self.logger.warning(f"Video file not found. Please check the file at {source_path}")
+            return None, None
+        except CorruptFileError:
+            self.logger.warning(f"Corrupt video. Please check the file at {source_path}")
             return None, None
         frame = video_reader.read()
         self.stream = cv2.cuda_Stream()

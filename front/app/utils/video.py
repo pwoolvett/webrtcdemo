@@ -1,11 +1,12 @@
 import time
-import cv2
 from threading import Thread
 from queue import Queue
 from pathlib import Path
 
+import cv2
 
 from app.utils.logger import logger
+from app.utils.exceptions import CorruptFileError
 
 class VideoReader:
     def __init__(self, video_file: Path, maxsize: int=500, backend: str="cpu") -> None:
@@ -33,15 +34,15 @@ class VideoReader:
         test_video_streamer = cv2.VideoCapture(video_path)
         opened_video, _ = test_video_streamer.read()
         if not opened_video:
-            raise ValueError(f"Could not open video at {video_path}. Corrupt file")
+            raise CorruptFileError(f"Could not open video at {video_path}. Corrupt file")
 
         #Set relevant video properties
         self.height = int(test_video_streamer.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.width = int(test_video_streamer.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.fps = int(test_video_streamer.get(cv2.CAP_PROP_FPS))
-        self.frame_number = int(test_video_streamer.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frame_number = 0
         
-        logger.debug(f"Video details: ({self.width}x{self.height}). {self.frame_number} frames")
+        logger.debug(f"Video details: ({self.width}x{self.height})")
         #Cleanup to avoid losing first frame
         test_video_streamer.release()
         return cv2.VideoCapture(video_path)
@@ -73,7 +74,9 @@ class VideoReader:
         """
         Retrieve a frame from video frames queue.
         """
-        return self.queue.get()
+        frame = self.queue.get()
+        self.frame_number += 1
+        return frame
     
     def running(self):
         """
@@ -83,7 +86,7 @@ class VideoReader:
     
     def more(self):
         """
-        Yield video frames.
+        Check that there are frames left in queue.
         """
         tries = 0
         while self.queue.qsize() == 0 and not self.stopped and tries <20:
