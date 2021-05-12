@@ -234,7 +234,6 @@ class VideoRecorder:
             * self.window_size,  # once backwards (as incoming buffers are delayd by window_size), once into the future.
         )
 
-    @traced(print)
     def record(self):
         print(f"self.state: {self.state}")
         print(f"self.pipeline.get_state(None): {self.pipeline.get_state(Gst.CLOCK_TIME_NONE)}")
