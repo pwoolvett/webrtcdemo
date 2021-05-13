@@ -7,13 +7,17 @@
             "label": "rebuild",
             "type": "shell",
             "command": "manage/rebuild.sh",
-            "problemMatcher": []
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
             "label": "check-docker-context",
             "type": "shell",
             "command": "source manage/context",
             "problemMatcher": []
-        },
+        }
     ]
 }

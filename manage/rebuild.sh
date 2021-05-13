@@ -14,7 +14,7 @@ export DISPLAY=:0
 xhost + 
 
 docker-compose kill
-docker-compose down
+docker-compose down --remove-orphans
 docker-compose build \
     && clear \
     && docker-compose up
