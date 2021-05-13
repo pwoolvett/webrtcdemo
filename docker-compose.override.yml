@@ -3,11 +3,16 @@ version: '3'
 services:
   backend:
     volumes:
-        - ./debug/dots:/opt/dots
+      - ./debug/dots:/opt/dots
+      - ./debug/cams.gstp:/opt/cams.gstp
+      - ./debug/launch:/opt/launch
     environment:
       - GST_DEBUG_DUMP_DOT_DIR=/opt/dots
       - GST_DEBUG_LOG_LEVEL=
       - LOGLEVEL=info
+    working_dir: /opt/
+    entrypoint:
+      - ./launch
 
   contextls:
     build:

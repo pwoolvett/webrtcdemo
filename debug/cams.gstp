@@ -1,0 +1,19 @@
+rtspsrc
+    location=rtsp://admin:admin.1234@10.100.10.77:554/cam/realmonitor?channel=1&subtype=1
+! decodebin
+! muxer.sink_0
+
+nvstreammux
+    name=muxer
+    width=704
+    height=480
+    batch-size=1
+    live-source=true
+! nvmultistreamtiler
+    name=tiler
+    width=704
+    height=480
+! nvvideoconvert
+! videoconvert
+! fpsdisplaysink
+  video-sink=nveglglessink
