@@ -1,5 +1,6 @@
 version: '3'
 
+
 services:
 
   nginx:
@@ -8,11 +9,23 @@ services:
     volumes:
       - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf 
   
-  pythia-demo:
-    image: rmclabs-io/pythia-demo
+
+  signalling:
+    image: rmclabs-io/ventanas-signalling
+    build: ./signalling
+    network_mode: "host"
+    depends_on:
+      - nginx
+    environment:
+      - SIGNALLING_HOST=0.0.0.0
+      - SIGNALLING_PORT=7003
+    
+
+  backend:
+    image: rmclabs-io/ventanas-backend_deepstream
     build:
       context: .
-      dockerfile: pythia_demo/Dockerfile
+      dockerfile: backend_deepstream/Dockerfile
     volumes:
       - $DB_LOCAL_PATH:$DB_REMOTE_PATH
       - /tmp/.X11-unix:/tmp/.X11-unix
@@ -22,7 +35,8 @@ services:
     restart: always
     environment:
       - DISPLAY=:0 
-      - PYTHONUNBUFFERED=1
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=7001
  
 
   motion-heatmap:
@@ -44,22 +58,20 @@ services:
     depends_on:
       - signalling
 
-  flask-front:
+  frontend:
+    image: rmclabs-io/ventanas-app_flask
     build:
       context: .
-      dockerfile: front/Dockerfile
+      dockerfile: frontend_flask/Dockerfile
     network_mode: "host"
+    runtime: nvidia
     volumes:
       - $DB_LOCAL_PATH:$DB_REMOTE_PATH
-    # ports:
-    #   - 8080:8888
+      - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
     depends_on:
       - signalling
+      - nginx
+      - backend
     environment:
-      - PYTHONUNBUFFERED=1
-
-  signalling:
-    build: ./signalling
-    network_mode: "host"
-    # ports:
-    #   - 9443:8443
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=7002

@@ -1,0 +1,5 @@
+docker build --no-cache -f- . <<EOF
+FROM alpine
+ADD . /opt/context
+RUN ls -lah /opt/context
+EOF

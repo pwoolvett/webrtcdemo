@@ -1,0 +1,35 @@
+{% extends "base.jinja" %}
+
+{% block title %}Estadisticas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="column">    
+    <h1>Check Events</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        {{ form.date_from.label }}
+        {{ form.date_from(size=20) }}
+        
+        {{ form.time_from.label }}
+        {{ form.time_from(size=20) }}
+        {{ form.date_to.label }}
+        {{ form.date_to(size=20) }}
+        {{ form.time_to.label }}
+        {{ form.time_to(size=20) }}
+        {{ form.camera_id.label }}
+        {{ form.camera_id(size=20) }}
+        {{ form.submit() }}
+    </form>
+</div>
+<div class="column">
+    {% if results %}
+    <h2>Se ha detectado un total de {{ results.event_count }} infracciones potenciales</h2>    
+    <h2>generadas por {{ results.object_count }} personas detectadas</h2>
+    <body>
+        <img src="{{ url_for('static', filename='img/heatmap.png') }}" alt="Heatmap">
+      </body>  
+      </div>
+    {% endif %}
+
+{% endblock %}
