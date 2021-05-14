@@ -46,18 +46,6 @@ osd_tee.
 ! queue
 ! nvvideoconvert
 ! videoconvert
-! timeoverlay
-  halignment=right
-  valignment=bottom
-  text="Current time:"
-  shaded-background=true
-  font-desc="Sans, 24" 
-! clockoverlay
-  halignment=right
-  valignment=center
-  text="Stream time:"
-  shaded-background=true
-  font-desc="Sans, 24" 
 ! fpsdisplaysink
   video-sink=nveglglessink
 
@@ -87,10 +75,7 @@ demux.src_0
 ! nvvideoconvert
 ! videoconvert
 ! video/x-raw,format=YV12
-! appsink
-  name=appsink_0
-  emit-signals=true
-  async=false
+! fakesink
 
 demux.src_1
 ! video/x-raw(memory:NVMM), format=NV12
@@ -100,7 +85,4 @@ demux.src_1
 ! nvvideoconvert
 ! videoconvert
 ! video/x-raw,format=YV12
-! appsink
-  name=appsink_1
-  emit-signals=true
-  async=false
+! fakesink

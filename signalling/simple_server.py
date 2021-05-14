@@ -78,7 +78,7 @@ class Streamer:
             "--port",
             default=os.environ["SIGNALLING_PORT"],
             type=int,
-            help="Port to listen on"
+            help="Port to listen on",
         )
         parser.add_argument(
             "--keepalive-timeout",

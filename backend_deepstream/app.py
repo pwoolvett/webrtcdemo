@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from pathlib import Path
 from time import sleep
 
 from flask import Flask
@@ -14,13 +15,15 @@ from app.play import application
 
 video_endpoint = Flask("RMCLabs")
 
-@video_endpoint.route('/ready', methods = ["GET"])
+
+@video_endpoint.route("/ready", methods=["GET"])
 def ready():
     return {
         "STATUS": f"OK",
     }
 
-@video_endpoint.route('/list_cameras', methods = ["GET"])
+
+@video_endpoint.route("/list_cameras", methods=["GET"])
 def list_cameras():
     print("CALLED: list_cameras")
     logger.info("Received list cameras request")
@@ -45,7 +48,8 @@ def focus_camera(camera_id: int):
         "response": response,
     }
 
-@video_endpoint.route('/record/<source_id>', methods = ["GET"])
+
+@video_endpoint.route("/record/<int:source_id>", methods=["GET"])
 def start_recording(source_id):
     logger.info("Received recording request")
     recorded_video_path = video_recorder.record(source_id)
@@ -59,24 +63,26 @@ def start_recording(source_id):
 def start_streaming(peer_id):
     logger.info("Received start_streaming request")
 
-    errs=[]
+    errs = []
     for _ in range(10):
         try:
             gstreamer_webrtc_client.open_streaming_connection(peer_id)
-            return {"STATUS": "RUNNING"} 
+            return {"STATUS": "RUNNING"}
         except Exception as e:
-            errs.append({
-                "ERROR_TYPE": str(type(e)),
-                "ERROR":str(e) 
-            })
+            errs.append({"ERROR_TYPE": str(type(e)), "ERROR": str(e)})
             sleep(1)
-    return {"ERROR_TYPE":"MULTIPLE ERRORS", "ERROR":errs}
+    return {"ERROR_TYPE": "MULTIPLE ERRORS", "ERROR": errs}
+
+
+
 
 
 if __name__ == "__main__":
+    certs_path = Path(os.environ["CERTS_PATH"])
     video_endpoint.run(
         debug=False,
         host=os.environ["FLASK_RUN_HOST"],
         port=os.environ["FLASK_RUN_PORT"],
-        threaded=False
+        threaded=False,
+        ssl_context=(str(certs_path / "cert.pem"), str(certs_path / "key.pem")),
     )

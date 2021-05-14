@@ -1,5 +1,12 @@
-docker build --no-cache -f- . <<EOF
+#!/usr/bin/env bash
+
+docker build \
+    --no-cache \
+    -f- \
+    . \
+    <<EOF
 FROM alpine
+RUN apk add tree
 ADD . /opt/context
-RUN ls -lah /opt/context
+RUN tree -af /opt/context
 EOF

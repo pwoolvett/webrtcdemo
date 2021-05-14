@@ -422,6 +422,7 @@ class MultiVideoRecorder:
         }
 
     def record(self, source_id):
+        print(f"Available recorders: {self.recorders}")
         recorder = self.recorders[source_id]
         return recorder.record()
 
