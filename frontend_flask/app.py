@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from app import app
+from app import routes
 
 if __name__ == "__main__":
     certs_path = Path(os.environ["CERTS_PATH"])

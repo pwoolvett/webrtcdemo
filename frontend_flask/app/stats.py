@@ -1,17 +1,12 @@
-from os import stat
 import cv2
 import numpy as np
 import pandas as pd
 from contextlib import contextmanager
 from typing import ContextManager, Tuple
-from PIL import Image
 from datetime import datetime
-from pathlib import Path
+from os import stat
 
-from pandas.core.indexes.base import InvalidIndexError
 from app import app
-
-import ray
 
 from app.utils.heatmap import GPUMotionHeatmap
 
@@ -66,12 +61,6 @@ class EventStatistics:
             db_session=db_session,
         )
         return cls(**kwargs)
-
-    def mask(self, bbox: np.array) -> np.array:
-        mask = np.zeros(self.base_image.size)
-        x_min, x_max, y_min, y_max = bbox
-        mask[x_min:x_max, y_min:y_max] += 1
-        return mask
 
     @contextmanager
     def query_session(
@@ -175,7 +164,6 @@ class EventStatistics:
             yield video_path, filtered_detections
 
     @staticmethod
-    @ray.remote(num_gpus=GPU_FRACTION)
     def compute_heatmap(detections: pd.DataFrame, video_path: str) -> np.ndarray:
         """Compute a motion heatmap for a single event.
 
@@ -224,8 +212,7 @@ class EventStatistics:
         self,
     ):
         descriptive_statistics = self.get_statistics()
-        compute_references = self.compute_heatmap_values()
-        heatmap_values = [result for result in ray.get(compute_references) if result is not None]
+        heatmap_values = self.compute_heatmap_values()
         if not heatmap_values:
             heatmap_location = str(app.config["RESOURCES_PATH"] / "images" / "base_image.png")
         else:
