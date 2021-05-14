@@ -28,6 +28,7 @@ BASE_IMAGES = {
 IMAGE_SIZE = np.array(cv2.imread("base_image.png")).shape
 GPU_FRACTION = 0.1
 
+
 class EventStatistics:
     def __init__(
         self,
@@ -47,11 +48,10 @@ class EventStatistics:
         self.base_image = BASE_IMAGES[camera_id]
         self.Session = Session
         self.images_path = app.config["RESOURCES_PATH"] / "images"
-        self.videos_path = app.config['SAVED_VIDEOS_PATH']
+        self.videos_path = app.config["SAVED_VIDEOS_PATH"]
         self.events, self.detections = self.get_values(
             start_datetime, end_datetime, camera_id
         )
-
 
     @classmethod
     def build_from_form(cls, form, db_session):
@@ -134,38 +134,40 @@ class EventStatistics:
             np.array: Overlayed image.
         """
         import time
+
         results = []
         t0 = time.perf_counter()
         for video_path, detection in [*self.group_events()]:
             experiment_actor = self.compute_heatmap.remote(detection, video_path)
             results.append(experiment_actor)
-        print(f"Heatmap computation time for {len( [*self.group_events()])} events: {time.perf_counter()-t0:.3f} s")
+        print(
+            f"Heatmap computation time for {len( [*self.group_events()])} events: {time.perf_counter()-t0:.3f} s"
+        )
         return results
 
-    def display_heatmap(self, frame:np.ndarray):
-        color_image = cv2.applyColorMap(
-            frame, cv2.COLORMAP_HOT
-        )  # Color motion image
+    def display_heatmap(self, frame: np.ndarray):
+        color_image = cv2.applyColorMap(frame, cv2.COLORMAP_HOT)  # Color motion image
         overlayed_image = cv2.addWeighted(self.base_image, 0.7, color_image, 0.7, 0)
         print(f"BASE: {self.base_image.shape}")
         print(f"COLOR: {color_image.shape}")
-        save_path = self.images_path/"heatmap.png"
+        save_path = self.images_path / "heatmap.png"
         cv2.imwrite(str(save_path), overlayed_image)
         return save_path
 
-
-    def group_events(self, ):
-        for event_id in self.events['id'].unique():
-            event = self.events[self.events.id==event_id]
-            video_path = str(self.videos_path/str(event.evidence_video_path.values[0]))
-            filtered_detections = self.detections[self.detections.event_id==event_id]
+    def group_events(
+        self,
+    ):
+        for event_id in self.events["id"].unique():
+            event = self.events[self.events.id == event_id]
+            video_path = str(
+                self.videos_path / str(event.evidence_video_path.values[0])
+            )
+            filtered_detections = self.detections[self.detections.event_id == event_id]
             yield video_path, filtered_detections
-        
+
     @staticmethod
     @ray.remote(num_gpus=GPU_FRACTION)
-    def compute_heatmap(
-        detections: pd.DataFrame, video_path: str
-    ) -> np.ndarray:
+    def compute_heatmap(detections: pd.DataFrame, video_path: str) -> np.ndarray:
         """Compute a motion heatmap for a single event.
 
         Args:
@@ -175,9 +177,11 @@ class EventStatistics:
         Returns:
             np.ndarray: Motion heatmap values, for the given event.
         """
-        heatmap = GPUMotionHeatmap(detections=detections, source_path=video_path, maxsize=100)
+        heatmap = GPUMotionHeatmap(
+            detections=detections, source_path=video_path, maxsize=100
+        )
         if not heatmap.video_reader:
-            return 
+            return
         heatmap_values = heatmap()
         return heatmap_values  # 1 / masked_values.max() * masked_values
 
@@ -212,7 +216,9 @@ class EventStatistics:
     ):
         descriptive_statistics = self.get_statistics()
         compute_references = self.compute_heatmap_values()
-        heatmap_values = [result for result in ray.get(compute_references) if result is not None]
+        heatmap_values = [
+            result for result in ray.get(compute_references) if result is not None
+        ]
         frame = sum(heatmap_values)
         heatmap_location = self.display_heatmap(frame)
         return dict(

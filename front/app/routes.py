@@ -7,8 +7,8 @@ import requests
 from app import app
 from app.forms import TimeFilterForm
 from app.models import get_session
-from app.stats import EventStatistics
 from app.registry import RegistryStatistics
+from app.utils.metadata import EventStatistics
 
 
 # DBSession = get_session(app.config["SQLALCHEMY_DATABASE_URI"])
@@ -19,22 +19,27 @@ DBSession = get_session("sqlite:////home/rmclabs/RMCLabs/webrtcdemo/db/test.db")
 def index():
     return flask.render_template("index.html")
 
+
 import threading
+
+
 class RunLater(threading.Thread):
-    def __init__(self, delay, cb, cb_args,*a, **kw):
+    def __init__(self, delay, cb, cb_args, *a, **kw):
         super().__init__(*a, **kw)
         self.delay = delay
         self.cb = cb
         self.cb_args = cb_args
         self.response = None
 
-    def run(self):  
+    def run(self):
         from time import sleep
+
         sleep(self.delay)
         result = self.cb(*self.cb_args)
         print(f"GOT RESPONSE: {result.text}")
 
         self.result = result
+
 
 @app.route("/live")
 def play_stream():

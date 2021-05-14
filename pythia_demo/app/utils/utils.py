@@ -174,12 +174,12 @@ def run_later(cb, delay, *a, daemon=True, **kw) -> CancellableRunLater:
     runner.start()
     return runner
 
+
 from typing import Union
 from pathlib import Path
-def pipe_from_file(
-    path: Union[str, Path],
-    **pipeline_kwargs
-) -> str:
+
+
+def pipe_from_file(path: Union[str, Path], **pipeline_kwargs) -> str:
     logger.info(f"Loading pipeline from {path}")
 
     real = Path(path).resolve()

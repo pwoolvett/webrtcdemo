@@ -15,7 +15,6 @@ from dump import register_event
 from dump import SELECTED_ROIS
 
 
-
 class MyCustomExtract(Producer):
     def extract_metadata(self, pad, info):
         meta = {}
@@ -68,7 +67,9 @@ class MyCustomExtract(Producer):
 
 
 class DDBBWriterProcess(Consumer):
-    def __init__(self, ):
+    def __init__(
+        self,
+    ):
         self.video_recorder = VideoRecorder()
         self.selected_rois = SELECTED_ROIS
         self.Session = Session
@@ -86,7 +87,12 @@ class DDBBWriterProcess(Consumer):
             video_path = self.video_recorder.record()
 
             # Check if event has already been registered
-            event_id = register_event(video_path, event_type="Trespassing", db_session=db_session, camera_id=source_id)
+            event_id = register_event(
+                video_path,
+                event_type="Trespassing",
+                db_session=db_session,
+                camera_id=source_id,
+            )
 
             registered_detections = []
             for detection in important_detections:
@@ -101,7 +107,6 @@ class DDBBWriterProcess(Consumer):
             )
             db_session.add(registered_frame)
         db_session.commit()
-
 
     def filter_detections(self, detections: list) -> list:
         # TODO use yield here instead

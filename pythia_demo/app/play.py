@@ -34,7 +34,6 @@ class Ventanas(Standalone):
     def muxer(self):
         return get_by_name_or_raise(self.pipeline, "muxer")
 
-
     @property
     def tiler(self):
         return get_by_name_or_raise(self.pipeline, "tiler")
@@ -42,14 +41,13 @@ class Ventanas(Standalone):
     @property
     def cameras(self):
         return [
-            str(pad)
-            for pad in self.muxer.pads
-            if "sink" in str(pad.direction).lower()
+            str(pad) for pad in self.muxer.pads if "sink" in str(pad.direction).lower()
         ]
 
     def focus_camera(self, camera_id):  # TODO: handle wrong number
         result = self.tiler.set_property("show-source", camera_id)
         return {"status": "OK", "result": str(result)}
+
 
 mem = _build_meta_map(
     "analytics",
@@ -64,16 +62,12 @@ application = Ventanas(pipeline_str, mem)
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
     # peer_id=1,
-    server="ws://0.0.0.0:8443", # websocket uri  TODO: with net=host in docker-compose this wont work
+    server="ws://0.0.0.0:8443",  # websocket uri  TODO: with net=host in docker-compose this wont work
     pipeline=application.pipeline,
     connection_endpoint="connection",
 )
 
-video_recorder = VideoRecorder(
-    application.pipeline, 
-    fps=30, 
-    window_size=2
-)
+video_recorder = VideoRecorder(application.pipeline, fps=30, window_size=2)
 
 extractor, consumer = mem["analytics"]
 consumer.set_video_recorder(video_recorder)

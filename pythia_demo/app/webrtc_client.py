@@ -156,14 +156,14 @@ class WebRTCClient:
         self,
         id_: int,
         # peer_id: int,  # TODO: this should be defined in the callback so we do not have to hardcode it in js
-        server: str, # websocket uri
-        pipeline: Gst.Pipeline, 
-        connection_endpoint: str
+        server: str,  # websocket uri
+        pipeline: Gst.Pipeline,
+        connection_endpoint: str,
     ):
         self.our_id = id_
         self.conn = None
         # self.webrtc = None
-        self.peer_id = None # peer_id
+        self.peer_id = None  # peer_id
         if not server:
             raise ValueError
         self.server = server or "wss://webrtc.nirbheek.in:8443"
@@ -198,7 +198,6 @@ class WebRTCClient:
         loop = asyncio.new_event_loop()
         loop.run_until_complete(self.conn.send(icemsg))
         loop.close()
-
 
     def open_streaming_connection(self, peer_id):
         self.peer_id = peer_id
