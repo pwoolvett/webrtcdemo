@@ -70,6 +70,7 @@ class Event(Base):
     camera_id = Column(Integer, nullable=False)
     event_type = Column(String, nullable=False)
     evidence_video_path = Column(String, unique=True, nullable=False)
+    motion_heatmap_path = Column(String, unique=True, nullable=True)
 
     detections = relationship("Detection", backref="event")
 
