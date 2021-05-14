@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from pathlib import Path
 from time import sleep
 
 from flask import Flask
@@ -48,7 +49,7 @@ def focus_camera(camera_id: int):
     }
 
 
-@video_endpoint.route("/record/<source_id>", methods=["GET"])
+@video_endpoint.route("/record/<int:source_id>", methods=["GET"])
 def start_recording(source_id):
     logger.info("Received recording request")
     recorded_video_path = video_recorder.record(source_id)
@@ -73,10 +74,14 @@ def start_streaming(peer_id):
     return {"ERROR_TYPE": "MULTIPLE ERRORS", "ERROR": errs}
 
 
+
+
 if __name__ == "__main__":
+    certs_path = Path(os.environ["CERTS_PATH"])
     video_endpoint.run(
         debug=False,
         host=os.environ["FLASK_RUN_HOST"],
         port=os.environ["FLASK_RUN_PORT"],
         threaded=False,
+        ssl_context=(str(certs_path / "cert.pem"), str(certs_path / "key.pem")),
     )

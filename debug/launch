@@ -11,8 +11,7 @@ set -u
 export GST_DEBUG_DUMP_DOT_DIR=/opt/dots
 
 
-export pipeline=$(cat ./cams.gstp | tr "\n" " ")
+export pipeline=$(cat ./wip.gstp | tr "\n" " ")
 echo pipeline=$pipeline
 
 gst-launch-1.0 -v -e $pipeline
-  

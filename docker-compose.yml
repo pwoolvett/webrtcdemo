@@ -40,6 +40,7 @@ services:
       - DISPLAY=:0 
       - FLASK_RUN_HOST=0.0.0.0
       - FLASK_RUN_PORT=7001
+      - CERTS_PATH=/certs/
  
   frontend:
     image: rmclabs-io/ventanas-app_flask
