@@ -1,0 +1,9 @@
+import os
+import logging
+
+from logging import getLogger
+
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
+logging.basicConfig(level=LOGLEVEL)
+
+logger = getLogger("Motion Analysis Backend")
