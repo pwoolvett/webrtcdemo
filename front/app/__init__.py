@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import ray
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
@@ -13,4 +12,3 @@ db = SQLAlchemy(app)
 
 # app.config['AREAS_PER_CAM'] = get_cams()#TODO Implementar
 app.config["AREAS_PER_CAM"] = {0: "Camara ejemplo"}
-from app import routes
