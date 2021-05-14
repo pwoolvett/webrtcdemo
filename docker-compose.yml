@@ -8,16 +8,15 @@ services:
     volumes:
       - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf 
   
-
   pythia-demo:
     image: rmclabs-io/pythia-demo
     build:
       context: .
       dockerfile: pythia_demo/Dockerfile
     volumes:
-      - ./db:/db
+      - $DB_LOCAL_PATH:$DB_REMOTE_PATH
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./debug/vids:/opt/vids
+      - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
     network_mode: "host"
     runtime: nvidia
     restart: always
@@ -25,24 +24,25 @@ services:
       - DISPLAY=:0 
       - PYTHONUNBUFFERED=1
  
-  # sendrecv-gst:
-  #   volumes:
-  #     - /tmp/.X11-unix:/tmp/.X11-unix
-  #   network_mode: "host"
-  #   build: ./sendrecv/gst
-  #   # ports:
-  #   #   - 8000:8000
-  #   runtime: nvidia
-  #   restart: always
-  #   environment:
-  #     - DISPLAY=:0 
 
-  # sendrecv-js:
-  #   build: ./sendrecv/js
-  #   ports:
-  #     - 8080:80
-  #   depends_on:
-  #     - signalling
+  motion-heatmap:
+    image: rmclabs-io/motion-heatmap
+    build:
+      context: .
+      dockerfile: motion/Dockerfile
+    volumes:
+      - /home/rmclabs/RMCLabs/webrtcdemo/motion:/motion
+      - $DB_LOCAL_PATH:$DB_REMOTE_PATH
+      - $HEATMAP_LOCAL_PATH:$HEATMAP_REMOTE_PATH
+      - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
+    network_mode: "host"
+    runtime: nvidia
+    restart: always
+    environment:
+      - DISPLAY=:0
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - signalling
 
   flask-front:
     build:
@@ -50,7 +50,7 @@ services:
       dockerfile: front/Dockerfile
     network_mode: "host"
     volumes:
-      - ./db:/db
+      - $DB_LOCAL_PATH:$DB_REMOTE_PATH
     # ports:
     #   - 8080:8888
     depends_on:
