@@ -208,10 +208,9 @@ class VideoRecorder:
 
         if self.state == self.States.RECORDING:
             try:
+                state_change_return, current, pending = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
                 state = self.appsrc.get_state(Gst.CLOCK_TIME_NONE)
-                if (
-                    Gst.State.PLAYING not in state
-                ):  # TODO: Warning: comparing different enum types: GstState and GstStateChangeReturn
+                if (current != Gst.State.PLAYING) or (pending != Gst.State.VOID_PENDING):
                     logger.debug(f"NOPE - State: {state}")
                     return Gst.FlowReturn.OK
                 data = self.deque.popleft()
@@ -236,7 +235,8 @@ class VideoRecorder:
 
     def record(self):
         print(f"self.state: {self.state}")
-        print(f"self.pipeline.get_state(None): {self.pipeline.get_state(Gst.CLOCK_TIME_NONE)}")
+        state_change_return, current, pending = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+        print(f"self.pipeline.get_state(None): {(state_change_return, current, pending)}")
         # avoid race condition when two threads call same code
         if self._pending_cancel:
             self._pending_cancel.cancel()

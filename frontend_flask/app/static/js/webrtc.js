@@ -25,8 +25,8 @@
 // // // // // // // // // // //  REFERENCE CODE // // // // // // // // // // // // // // // // // // 
 
 // Set this to override the automatic detection in websocketServerConnect()
-var ws_server;
-var ws_port=7003;
+// var ws_server;
+// var ws_port=7003;
 // Set this to use a specific peer id instead of a random one
 var default_peer_id = 1;
 // Override with your own STUN servers if you want
@@ -229,15 +229,16 @@ function websocketServerConnect() {
     //     textarea.value = JSON.stringify(default_constraints);
     // Fetch the peer id to use
     peer_id = default_peer_id || getOurId();
-    ws_port = ws_port || '8443';
-    if (window.location.protocol.startsWith ("file")) {
-        ws_server = ws_server || "127.0.0.1";
-    } else if (window.location.protocol.startsWith ("http")) {
-        ws_server = ws_server || window.location.hostname;
-    } else {
-        throw new Error ("Don't know how to connect to the signalling server with uri" + window.location);
-    }
-    var ws_url = 'wss://' + ws_server + ':' + ws_port
+    // ws_port = ws_port || '8443';
+    // if (window.location.protocol.startsWith ("file")) {
+    //     ws_server = ws_server || "127.0.0.1";
+    // } else if (window.location.protocol.startsWith ("http")) {
+    //     ws_server = ws_server || window.location.hostname;
+    // } else {
+    //     throw new Error ("Don't know how to connect to the signalling server with uri" + window.location);
+    // }
+    // var ws_url = 'wss://' + ws_server + ':' + ws_port ; 
+    var ws_url = 'wss://localhost:9999/signalling';  // TODO use configurable value
     setStatus("Connecting to server " + ws_url);
     ws_conn = new WebSocket(ws_url);
     /* When connected, immediately register with the server */

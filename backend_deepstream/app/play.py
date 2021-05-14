@@ -1,6 +1,7 @@
+import os
 import sys
-import gi
 
+import gi
 gi.require_version("Gst", "1.0")
 gi.require_version("GstWebRTC", "1.0")
 gi.require_version("GstSdp", "1.0")
@@ -65,8 +66,8 @@ application = Ventanas(pipeline_str, mem)
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
     # peer_id=1,
-    # server="ws://0.0.0.0:9999/signalling", # websocket uri  TODO: with net=host in docker-compose this wont work
-    server="wss://localhost:7003", # websocket uri
+    server=os.environ["SIGNALLING_SERVER"], # websocket uri  TODO: with net=host in docker-compose this wont work
+    # server="wss://localhost:7003", # websocket uri
     pipeline=application.pipeline,
     connection_endpoint="connection",
 )
@@ -95,13 +96,3 @@ video_recorder = MultiVideoRecorder(
 
 extractor, consumer = mem["analytics"]
 consumer.set_video_recorder(video_recorder)
-
-# self=application
-# try:
-#     self.loop.run()
-# except Exception as exc:
-#     logger.warning("Exc")
-#     logger.error(exc)
-#     raise
-# finally:
-#     self.stop()
