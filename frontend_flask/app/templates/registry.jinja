@@ -1,0 +1,181 @@
+{% extends "base.jinja" %}
+
+{% block extra_style_files %}{% endblock %}
+{% block extra_style_inline %}{% endblock %}
+{% block header_scripts %}
+
+  <script
+    type="text/javascript"
+    src="{{ url_for('static', filename='js/components/snapshot.js')+'?cacheBusting=' +  '{}'.format(range(99999)|random) }}">>{# avoid cache #}
+  </script
+
+{% endblock %}
+
+{% block title %}Registro de Eventos{% endblock %}
+
+{% block content %}
+
+  <!--region search+query  bar -->
+
+  <details class="mdl-expansion" width="100%">
+  
+    <summary class="mdl-expansion__summary">
+      <span align="right" class="mdl-expansion__header">Busqueda en el Registro de Eventos</span>
+    </summary>
+
+    <div
+      class="mdl-card mdl-shadow--2dp"
+      width="100%"
+      style="width:100%"
+    >
+
+
+    <div class="mdl-expansion__content">
+
+      <form action="" method="post">
+      <div class="mdl-grid">
+
+        {{ form.hidden_tag() }} <!--TODO: whats this for?-->
+
+        <div class="mdl-cell mdl-cell--2-col">
+          {{ form.date_from.label(extra_classes='mdl-textfield__label') }}
+          {{ form.date_from(size=20, extra_classes='mdl-textfield__input') }}
+        </div>
+
+        <div class="mdl-cell mdl-cell--2-col">
+          {{ form.time_from.label }}
+          {{ form.time_from(size=20) }}
+        </div>
+
+
+        <div class="mdl-cell mdl-cell--1-col"></div>
+        <div class="mdl-cell mdl-cell--2-col">
+          <div class="">
+            {{ form.camera_id(extra_classes='') }}
+            {{ form.camera_id.label(extra_classes='') }}
+          </div>
+        </div>
+        <div class="mdl-cell mdl-cell--1-col"></div>
+
+
+        <div class="mdl-cell mdl-cell--2-col">
+          {{ form.date_to.label }}
+          {{ form.date_to(size=20) }}
+        </div>
+
+        <div class="mdl-cell mdl-cell--2-col">
+          {{ form.time_to.label }}
+          {{ form.time_to(size=20) }}
+        </div>
+        
+    </div>
+    </form>
+    </div>
+    <div class="mdl-expansion__actions">
+      <button class="mdl-expansion__action mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-shadow--6dp" style="background-color:#263238 !important;">
+          <i class="material-icons" style="color:#FFFFFFFF !important;">search</i>
+      </button>
+      {#
+      <button class="mdl-expansion__action">Save</button>
+      <button class="mdl-expansion__action">Cancel</button> #}
+    </div>
+
+
+    </div>
+  </details>
+
+
+  <!--endregion-->
+
+
+  <!--region videolist -->
+
+
+    <div
+      class="mdl-grid"
+    {#  style="background-color: lightgreen;width:100%"#}
+    >
+      <div width="100%" style="width:100%;background-color: lightgreen;">
+        TODO: NOT IMPLEMENTED:
+        <ol>
+        <li>1. implement a list_recent events in the api (backend) </li>
+        <li>2. define a window.onload to call said api and display results </li>
+        <li>   2.1 a nice loading ui element while the query is running </li>
+        <li>   2.2 a nice user message "yaay no events" on empty events </li>
+        <li>   2.3 popullate dynamically from js instead of on the backend, and remove hardcoded example below </li>
+        </ol>
+      </div>
+      {% for numba in range(6) %}
+        <div class="mdl-cell mdl-cell--3-col">
+          <video-snapshot
+            {#thumbnail="{{ url_for('static', filename='videos/video_'+(0+(numba%2))|string+'.webp' )}}"#}
+            video-src="{{ url_for('static', filename='videos/video_'+(0+(numba%2))|string+'.mp4' )}}"
+            event-type="{{ 'TYPE_'+ numba|string }}"
+            start-datetime="{{ 'DATE_'+ numba|string }}"
+            location="{{ 'LOCATION_'+ numba|string }}"
+          >
+          </video-snapshot>
+        </div>
+      {% endfor %}
+
+    </div>
+  <!--endregion -->
+
+
+    {#
+    <h1>Check Events</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }} <!--TODO: whats this for?-->
+
+        {{ form.date_from.label }}
+        {{ form.date_from(size=20) }}
+
+        {{ form.time_from.label }}
+        {{ form.time_from(size=20) }}
+
+        {{ form.date_to.label }}
+        {{ form.date_to(size=20) }}
+
+        {{ form.time_to.label }}
+        {{ form.time_to(size=20) }}
+
+        <div>
+        {{ form.camera_id }}
+
+        {% for subfield in form.camera_id %}
+            <div>
+                {{ subfield.label(class_='mdl-radio mdl-js-radio mdl-js-ripple-effect') }}
+                {{ subfield(class_='mdl-radio__button') }}
+            </div>
+        {% endfor %}
+        </div>
+        
+        {{ form.submit() }}
+    </form>
+
+    {% if events %}
+    <ul class="demo-list-three mdl-list">
+        {% for event in events %}
+        <li class="mdl-list__item mdl-list__item--three-line">
+            <span class="mdl-list__item-primary-content">
+              <i class="material-icons mdl-list__item-avatar">report</i>
+              <span>Event: {{ event.type }}</span>
+              <span class="mdl-list__item-text-body">
+                {{ event.area }} ・ {{ event.date }} ・ {{ event.time }}
+              </span>
+            </span>
+            <span class="mdl-list__item-secondary-content">
+              <a class="mdl-list__item-secondary-action" href="{{ event.video_path }}"><i class="material-icons">file_download</i></a>
+            </span>
+          </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    #}
+
+{% endblock %}
+
+
+{% block postbody_scripts %}
+{% endblock %}
