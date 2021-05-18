@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+sudo chown -R $USER:$USER ./debug/dots/
+for i in ./debug/dots/**/*.dot; do
+    dot -O -Tpng $i
+done

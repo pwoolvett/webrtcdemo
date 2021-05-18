@@ -13,8 +13,14 @@ export DISPLAY=:0
 
 xhost + 
 
+sudo rm -rf ./debug/dots/*.dot
+sudo rm -rf ./debug/dots/*.png
+
 docker-compose kill
 docker-compose down --remove-orphans
 docker-compose build \
     && clear \
     && docker-compose up
+
+./manage/dots
+

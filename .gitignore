@@ -58,3 +58,4 @@ db/*
 debug/
 motion/app/tests/*
 frontend_flask/app/static/img/heatmap.png
+wip.pw

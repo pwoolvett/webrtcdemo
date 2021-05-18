@@ -2,14 +2,10 @@ version: '3'
 
 services:
   backend:
+    restart: "no"
     volumes:
       - ./debug/dots:/opt/dots
-      # - ./debug/wip.gstp:/opt/wip.gstp
-      # - ./debug/launch:/opt/launch
     environment:
       - GST_DEBUG_DUMP_DOT_DIR=/opt/dots
-      - GST_DEBUG_LOG_LEVEL=
+      - GST_DEBUG=2
       - LOGLEVEL=info
-    # working_dir: /opt/
-    # entrypoint:
-    #   - ./launch

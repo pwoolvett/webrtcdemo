@@ -61,7 +61,10 @@ mem = _build_meta_map(
 pipeline_str = pipe_from_file("app/pipeline.gstp")
 logger.debug(pipeline_str)
 
-application = Ventanas(pipeline_str, mem)
+application = Ventanas(
+    pipeline_str,
+    None,  # mem
+)
 
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
@@ -73,13 +76,13 @@ gstreamer_webrtc_client = WebRTCClient(
 )
 
 
-application()
+application(control_logs=False)
 
 # TODO: this must be performed after application runs because we need application.cameras
 # maybe we could use a gsttreamer probe instead
 for j in range(5):
     cams = application.cameras
-    print(f"cams={cams}")
+    logger.info(f"cams={cams}")
     if cams:
         break
     from time import sleep;sleep(1)
@@ -94,5 +97,5 @@ video_recorder = MultiVideoRecorder(
     sink_location_prefix="/videos/event_"
 )
 
-extractor, consumer = mem["analytics"]
-consumer.set_video_recorder(video_recorder)
+# extractor, consumer = mem["analytics"]
+# consumer.set_video_recorder(video_recorder)

@@ -34,18 +34,15 @@ NUM_BUF = RUNTIME_SECONDS * FRAMES_PER_SECOND
 
 DEFAULT_WINDOW_SIZE_SEC = 2
 
-CAPS = ",".join(
-    [
-        "video/x-raw",
-        "format=YV12",
-        "width=1280",
-        "height=720",
-        f"framerate={FRAMES_PER_SECOND}/1",
-        # "multiview-mode=mono",
-        # "pixel-aspect-ratio=1/1",
-        # "interlace-mode=progressive",
-    ]
-)
+# CAPS = ",".join(
+#     [
+#         "video/x-raw",
+#         "format=YV12",
+#         "width=1280",
+#         "height=720",
+#         f"framerate={FRAMES_PER_SECOND}/1",
+#     ]
+# )
 
 
 PIPE_RAW = f"""
@@ -137,13 +134,16 @@ class VideoRecorder:
           do-timestamp=true
           stream-type=0
           format=time
-        ! {CAPS}
+        ! {{caps}}
         ! queue
           flush-on-eos=false
-        ! x264enc
-        ! avimux
+        ! nvvideoconvert
+        ! nvv4l2h264enc
+        ! h264parse
+        ! qtmux
         ! filesink
-          location="{{sink_location}}.avi"
+          location="{{sink_location}}.mp4"
+          name=filesink_{{sink_location}}
           name=filesink
     """
 
@@ -177,7 +177,7 @@ class VideoRecorder:
         self.window_size = window_size
         self.wait_start_msec = wait_start_msec
         self.running_since = running_since or datetime.datetime.now()
-        self.sink_location_prefix = f"{sink_location_prefix}_{self.running_since}_"
+        self.sink_location_prefix = sink_location_prefix
 
         self.record_bin = None
         self._record_count = -1
@@ -233,10 +233,12 @@ class VideoRecorder:
             * self.window_size,  # once backwards (as incoming buffers are delayd by window_size), once into the future.
         )
 
+    @dotted
+    @traced(logger.debug)
     def record(self):
-        print(f"self.state: {self.state}")
+        logger.info(f"self.state: {self.state}")
         state_change_return, current, pending = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
-        print(f"self.pipeline.get_state(None): {(state_change_return, current, pending)}")
+        logger.info(f"self.pipeline.get_state(None): {(state_change_return, current, pending)}")
         # avoid race condition when two threads call same code
         if self._pending_cancel:
             self._pending_cancel.cancel()
@@ -246,25 +248,24 @@ class VideoRecorder:
             self.state = self.States.STARTING
 
             self._record_count += 1
-            name = f"{self.running_since}_{self._record_count}"
-            run_later(self._start_recording, 0, name=name)
+            run_later(self._start_recording, 0, name=str(self._record_count))
             self.reset_stop_recording_timeout()
             self.wait_for_bin(True)
             return self.current_video_location
 
         if self.state == self.States.RECORDING:
-            print(f"Recording already recording...")
+            logger.info(f"Recording already recording...")
             self.reset_stop_recording_timeout()
             return self.current_video_location
 
         if self.state == self.States.STARTING:
-            print(f"Recording already starting - rescheduling...")
+            logger.info(f"Recording already starting - rescheduling...")
             r = run_later(self.record, 1)
             r.join()
             return r._output
 
         if self.state == self.States.FINISHING:
-            print(
+            logger.info(
                 f"Recording finising previous state - re-scheduling record event"
             )
             r = run_later(self.record, 1e-3)
@@ -292,26 +293,33 @@ class VideoRecorder:
             sleep(self.wait_start_msec / (niter * 1e3))
         else:
             raise TimeoutError(msg)
-        return
+        return self.record_bin
 
     @dotted
-    @traced(logger.info)
+    @traced(logger.debug)
     def _start_recording(self, name):
         app_sink = self.appsink.get_static_pad('sink')
-
+        caps_raw = app_sink.get_current_caps()
+        # logger.warning(f"CAPS_RAW: {caps_raw.to_string()}")
+        # s = caps_raw.get_structure(0)
+        # capstuple = [
+        #     s.get_value(cap)
+        #     for cap in
+        #     ('width', "height", "framerate", "format")
+        # ]
         add = app_sink.add_probe(
             Gst.PadProbeType.BUFFER,
             self._connect_bin,
-            name
+            name,
+            caps_raw
         )
         if not add:
             logger.error("Could not add probe")
             sys.exit(42)
 
-    @dotted
-    @traced(logger.debug)
-    def _connect_bin(self, pad, info, name):
-        self._create_record_bin(name)
+    @traced(logger.info)
+    def _connect_bin(self, pad, info, name, caps):
+        self._create_record_bin(name, caps.to_string())
 
         add = self.pipeline.add(self.record_bin)
         if not add:
@@ -356,10 +364,13 @@ class VideoRecorder:
         return Gst.PadProbeReturn.OK
 
     @traced(logger.debug)
-    def _create_record_bin(self, name):
+    def _create_record_bin(self, name, caps_raw):
+        caps = caps_raw
+
         self.record_bin = Gst.parse_bin_from_description(
             self.RECORD_BIN_STRING.format(
-                sink_location=f"{self.sink_location_prefix}{name}"
+                sink_location=f"{self.sink_location_prefix}{name}",
+                caps=caps
             ),
             True,
         )
@@ -372,7 +383,8 @@ class VideoRecorder:
             self._check_eos,
         )
 
-    @traced(logger.debug)
+    @dotted
+    @traced(logger.info)
     def _disconnect_bin(self, pad, info):
         record_bin = self.record_bin
 
@@ -389,7 +401,7 @@ class VideoRecorder:
             raise NameError(f"Unable to find {self.appsink_name}")
         return appsink
 
-    @traced(logger.info)
+    @traced(logger.debug)
     def _stop_recording(self):
         if not self.record_bin:
             logger.debug(f"Record bin already removed - skipping stop recording")
@@ -425,10 +437,3 @@ class MultiVideoRecorder:
         print(f"Available recorders: {self.recorders}")
         recorder = self.recorders[source_id]
         return recorder.record()
-
-# s = pad.get_current_caps().get_structure(0)
-# width, height, fps = (
-#     s.get_value(cap)
-#     for cap in
-#     ('width', "height", "framerate")
-# )
