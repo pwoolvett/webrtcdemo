@@ -96,25 +96,25 @@ application(
 
 
 # # TODO: this must be performed after application runs because we need application.cameras
-# # maybe we could use a gsttreamer probe instead
-# for j in range(5):
-#     cams = application.cameras
-#     logger.info(f"cams={cams}")
-#     if cams:
-#         break
-#     from time import sleep;sleep(1)
-# else:
-#     raise RuntimeError("no cameras found")
+# maybe we could use a gsttreamer probe instead
+for j in range(5):
+    cams = application.cameras
+    logger.info(f"cams={cams}")
+    if cams:
+        break
+    from time import sleep;sleep(1)
+else:
+    raise RuntimeError("no cameras found")
 
 video_recorder = None
 
-# video_recorder = MultiVideoRecorder(
-#     range(len(application.cameras)),  # TODO ensure videorecorders are synchronixed with mux.sink_{source_id}
-#     pipeline=application.pipeline,
-#     fps=30,
-#     window_size=2,
-#     sink_location_prefix="/videos/event_"
-# )
+video_recorder = MultiVideoRecorder(
+    range(len(application.cameras)),  # TODO ensure videorecorders are synchronixed with mux.sink_{source_id}
+    pipeline=application.pipeline,
+    fps=30,
+    window_size=2,
+    sink_location_prefix="/videos/event_"
+)
 
 # extractor, consumer = mem["analytics"]
 # consumer.set_video_recorder(video_recorder)

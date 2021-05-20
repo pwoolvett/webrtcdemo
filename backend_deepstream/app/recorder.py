@@ -24,6 +24,8 @@ from logger import logger
 
 Gst.init(None)
 
+GLib.threads_init()
+
 FRAMES_PER_SECOND = 30
 RUNTIME_MINUTES = 20
 
@@ -126,48 +128,22 @@ class VideoRecorder:
             pipeline.set_state(Gst.State.NULL)
     """
 
-    # RECORD_BIN_STRING = f"""
-    #     appsrc
-    #       name=appsrc
-    #       emit-signals=true
-    #       is-live=true
-    #       do-timestamp=true
-    #       stream-type=0
-    #       format=time
-    #     {{caps}}
-    #     ! queue
-    #       flush-on-eos=false
-    #     ! nvvideoconvert
-    #     ! nvv4l2h264enc
-    #     ! h264parse
-    #     ! qtmux
-    #     ! filesink
-    #       location="{{sink_location}}.mp4"
-    #       name=filesink_{{sink_location}}
-    #       name=filesink
-    # """
-
-    # RECORD_BIN_STRING = f"""
-    #     appsrc
-    #       name=appsrc
-    #       emit-signals=true
-    #       is-live=true
-    #       do-timestamp=true
-    #       stream-type=0
-    #       format=time
-    #       caps={{caps}}
-    #     ! caps={{caps}}
-    #     ! queue
-    #       flush-on-eos=false
-    #     ! nvvideoconvert
-    #     ! nvv4l2h265enc
-    #     ! h265parse
-    #     ! mp4mux
-    #     ! filesink
-    #       location="{{sink_location}}.mp4"
-    #       name=filesink_{{sink_location}}
-    #       name=filesink
-    # """
+    RECORD_BIN_STRING = f"""
+        appsrc
+          name=appsrc
+          emit-signals=true
+          is-live=true
+          do-timestamp=true
+          stream-type=0
+          format=time
+          caps={{caps}}
+        ! vp8enc
+          deadline=1
+        ! webmmux
+        ! filesink
+          location={{sink_location}}.webm
+          name=filesink
+    """
 
     class States(enum.Enum):
         IDLE = None
@@ -230,11 +206,14 @@ class VideoRecorder:
 
         if self.state == self.States.RECORDING:
             try:
-                state_change_return, current, pending = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+                logger.info("ZZZZ: RECEIVED BUFFER IN RECORDING STATE")
+                state_change_return, current, pending = self.pipeline.get_state(1000)  # TODO: handle possible outcomes better
                 state = self.appsrc.get_state(Gst.CLOCK_TIME_NONE)
-                if (current != Gst.State.PLAYING) or (pending != Gst.State.VOID_PENDING):
-                    logger.debug(f"NOPE - State: {state}")
-                    return Gst.FlowReturn.OK
+                # if (current != Gst.State.PLAYING) or (pending != Gst.State.VOID_PENDING):
+                #     logger.info(f"ZZZZ: Not pushing buffer - PIPELINEState: {(state_change_return, current, pending)}")
+                #     logger.info(f"ZZZZ: Not pushing buffer - APPSRCState: {state}")
+                #     return Gst.FlowReturn.OK
+                logger.info(f"ZZZZ: Pushing buffer - State: {state}")
                 data = self.deque.popleft()
                 gstbuf = Gst.Buffer.new_wrapped(data)
                 self.appsrc.emit("push-buffer", gstbuf)
@@ -256,11 +235,11 @@ class VideoRecorder:
         )
 
     # @dotted
-    @traced(logger.debug)
+    @traced(logger.info)
     def record(self):
         logger.debug(f"self.state: {self.state}")
-        state_change_return, current, pending = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
-        logger.debug(f"self.pipeline.get_state(None): {(state_change_return, current, pending)}")
+        state_change_return, current, pending = self.pipeline.get_state(1000)
+        logger.debug(f"self.pipeline.get_state(1000): {(state_change_return, current, pending)}")
         # avoid race condition when two threads call same code
         if self._pending_cancel:
             self._pending_cancel.cancel()
@@ -276,18 +255,18 @@ class VideoRecorder:
             return self.current_video_location
 
         if self.state == self.States.RECORDING:
-            logger.debug(f"Recording already recording...")
+            logger.info(f"Recording already recording...")
             self.reset_stop_recording_timeout()
             return self.current_video_location
 
         if self.state == self.States.STARTING:
-            logger.debug(f"Recording already starting - rescheduling...")
+            logger.info(f"Recording already starting - rescheduling...")
             r = run_later(self.record, 1)
             r.join()
             return r._output
 
         if self.state == self.States.FINISHING:
-            logger.debug(
+            logger.info(
                 f"Recording finising previous state - re-scheduling record event"
             )
             r = run_later(self.record, 1e-3)
@@ -342,15 +321,15 @@ class VideoRecorder:
     @traced(logger.info)
     @dotted
     def _connect_bin(self, pad, info, name, caps):
-        caps_str = caps.to_string()
-        logger.debug(f"caps_str: `{caps_str}`")  # TODO: use logger.debug
+        caps_str = caps.to_string().replace(", ", ",")
+        logger.info(f"caps_str: `{caps_str}`")  # TODO: use logger.debug
         logger.info(f"PIPELINE STATE: (state_change_return, current, pending)={self.pipeline.get_state(Gst.CLOCK_TIME_NONE)}")
         try:
             self._create_record_bin(name, caps_str)
         except GLib.Error as exc:
             logger.error(f"Could not add record_bin to pipeline - reason: {type(exc)}({exc})")
             sys.exit(42)
-            print(F"TODO EXIT HERE\n"*10)
+            print(f"TODO EXIT HERE\n"*10)
             return Gst.PadProbeReturn.REMOVE
         
         add = self.pipeline.add(self.record_bin)
@@ -360,6 +339,12 @@ class VideoRecorder:
 
         try:
             synced = self.record_bin.sync_state_with_parent()
+            if not synced:
+                logger.error("Could not sync record_bin with pipeline")
+                sys.exit(42)
+            logger.error(f"SYNC RESULT: {synced}")
+            logger.info(f"PIPELINE STATE CON TIMEOUT POST PARENT: (state_change_return, current, pending)={self.pipeline.get_state(1000)}")
+            logger.info("Successfully syncd record_bin state to pipeline's")
 
 
             if not self.record_bin.sync_children_states():
@@ -368,13 +353,6 @@ class VideoRecorder:
             logger.info("Successfully synced record_bin's state to its childrens'")
             logger.info(f"PIPELINE STATE CON TIMEOUT POST CHILDREN: (state_change_return, current, pending)={self.pipeline.get_state(1000)}")
 
-
-            if not synced:
-                logger.error("Could not sync record_bin with pipeline")
-                sys.exit(42)
-            logger.error(f"SYNC RESULT: {synced}")
-            logger.info(f"PIPELINE STATE CON TIMEOUT POST PARENT: (state_change_return, current, pending)={self.pipeline.get_state(1000)}")
-            logger.info("Successfully syncd record_bin state to pipeline's")
 
 
             self.appsrc = self.record_bin.get_by_name("appsrc")
@@ -394,7 +372,7 @@ class VideoRecorder:
         finally:
             return Gst.PadProbeReturn.REMOVE
 
-    @traced(logger.debug)
+    @traced(logger.warning)
     def _release_bin(self):
         self.record_bin.set_state(Gst.State.NULL)
         self.record_bin.unref()  # TODO: check why we get gobject warnings... are they important?
@@ -409,10 +387,12 @@ class VideoRecorder:
     ):
         event_type = info.get_event().type
         if event_type == Gst.EventType.EOS:
+            logger.info("CHECK_EOS: received EOS - removing bin")
             name = self.current_video_location.rstrip(".avi")
             removed = self.pipeline.remove(self.record_bin)
             # Can't set the state of the src to NULL from its streaming thread
-            GLib.idle_add(self._release_bin)
+            #GLib.idle_add(self._release_bin)  # TODO ESTA WEAS ES PELIGROSA - REVISAR MEMLEAK
+            run_later(self._release_bin, 0)
             # record_bin.unref() TODO: use this if there are memleaks
             if not removed:
                 logger.error("BIN remove FAILED")
@@ -424,23 +404,27 @@ class VideoRecorder:
     @traced(logger.warning)
     def _create_record_bin(self, name, caps_raw):
         caps = caps_raw
+        # caps=",".join([
+        #     'video/x-raw',
+        #     'width=704',
+        #     'height=480',
+        #     'format=I420'
+        # #     # 'multiview-mode=(string)mono',
+        # #     # 'multiview-flags=(GstVideoMultiviewFlagsSet)0:ffffffff:/right-view-first/left-flipped/left-flopped/right-flipped/right-flopped/half-aspect/mixed-mono',
+        # #     # 'framerate=(fraction)30/1',
+        # #     # 'batch-size=(int)2',
+        # #     # 'num-surfaces-per-frame=(int)1',
+        # ])
+        bin_str = self.RECORD_BIN_STRING.format(
+            sink_location=f"{self.sink_location_prefix}{name}",
+            element_name=name,
+            caps=caps,
+            
+        )
 
+        logger.info(f"BIN STRING: ```{bin_str}```")
         self.record_bin = Gst.parse_bin_from_description(
-            self.RECORD_BIN_STRING.format(
-                sink_location=f"{self.sink_location_prefix}{name}",
-                # caps=caps,
-                caps=",".join([
-                    'video/x-raw',
-                    'width=(int)704',
-                    'height=(int)480',
-                #     # 'multiview-mode=(string)mono',
-                #     # 'multiview-flags=(GstVideoMultiviewFlagsSet)0:ffffffff:/right-view-first/left-flipped/left-flopped/right-flipped/right-flopped/half-aspect/mixed-mono',
-                #     # 'framerate=(fraction)30/1',
-                #     # 'batch-size=(int)2',
-                #     # 'num-surfaces-per-frame=(int)1',
-                #     # 'format=(string)YV12'
-                ])
-            ),
+            bin_str,
             True,
         )
 
@@ -454,14 +438,15 @@ class VideoRecorder:
         return self.record_bin
 
     @dotted
-    @traced(logger.debug)
+    @traced(logger.info)
     def _disconnect_bin(self, pad, info):
         record_bin = self.record_bin
 
         if not record_bin:
-            logger.debug("Record bin already unset! Removing blocking pad on tee...")
+            logger.info("Record bin already unset! Removing blocking pad on tee...")
             return Gst.PadProbeReturn.REMOVE
 
+        logger.info("ASCHEDULING RECORD BIN REMOVAL, then removing blocking pad on tee...")
         record_bin.send_event(Gst.Event.new_eos())
         return Gst.PadProbeReturn.REMOVE
 
@@ -495,13 +480,15 @@ class MultiVideoRecorder:
 
     ):
         recorder_kw.setdefault("running_since", datetime.datetime.now())
-        self.recorders = {
-            camera: VideoRecorder(
+        
+        sink_location_prefix = recorder_kw.pop("sink_location_prefix")
+        self.recorders = {}
+        for camera in cameras:
+            self.recorders[camera] = VideoRecorder(
                 appsink_name=f"{appsink_fmt}{camera}",
+                sink_location_prefix=f"{sink_location_prefix}{camera}_",
                 **recorder_kw
             )
-            for camera in cameras
-        }
 
     def record(self, source_id):
         print(f"Available recorders: {self.recorders}")

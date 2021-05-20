@@ -100,23 +100,21 @@ demux.src_0
 ! decodebin
 ! videoconvert
 ! nvvideoconvert
+! video/x-raw,width=704,height=480,format=I420
 ! queue
-! vp8enc
-  deadline=1
-! webmmux
-! filesink
-  location=/videos/video_0.webm
-  name=filesink_0
+! appsink
+  name=appsink_1
+  emit-signals=true
+  async=false
 
 
 demux.src_1
 ! decodebin
 ! videoconvert
 ! nvvideoconvert
+! video/x-raw,width=704,height=480,format=I420
 ! queue
-! vp8enc
-  deadline=1
-! webmmux
-! filesink
-  location=/videos/video_1.webm
-  name=filesink_1
+! appsink
+  name=appsink_0
+  emit-signals=true
+  async=false
