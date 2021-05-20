@@ -7,5 +7,5 @@ services:
       - ./debug/dots:/opt/dots
     environment:
       - GST_DEBUG_DUMP_DOT_DIR=/opt/dots
-      - GST_DEBUG=2
+      - GST_DEBUG=3,rtph265depay:1,h265parse:1
       - LOGLEVEL=info

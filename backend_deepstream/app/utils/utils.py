@@ -52,7 +52,7 @@ def traced(logging_function):
                 )
                 raise
             logging_function(f"{'RETURN':<8} [{uuid}]: {name}")
-            logging_function("\n         " + str(ret).replace("\n", "\n         "))
+            logging_function(str(ret))
             return ret
 
         return wrapper
@@ -75,7 +75,7 @@ def traced_async(logging_function):
                 )
                 raise
             logging_function(f"{'RETURN':<8} [{uuid}]: {name}")
-            logging_function("\n         " + str(ret).replace("\n", "\n         "))
+            logging_function(str(ret))
             return ret
 
         return wrapper
@@ -95,8 +95,10 @@ def dotted(func):
     @wraps(func)
     def wrapper(self, *a, **kw):
         _to_dot(f"pre_{name}", self.pipeline)
-        ret = func(self, *a, **kw)
-        _to_dot(f"post_{name}", self.pipeline)
+        try:
+            ret = func(self, *a, **kw)
+        finally:
+            _to_dot(f"post_{name}", self.pipeline)
         return ret
 
     return wrapper

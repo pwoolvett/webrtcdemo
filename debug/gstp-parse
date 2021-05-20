@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+from typing import Union
+import sys
+
+def pipe_from_file(
+    path: Union[str, Path],
+    **pipeline_kwargs
+) -> str:
+    print(f"Loading pipeline from {path}", file=sys.stderr)
+
+    real = Path(path).resolve()
+    with open(real) as fp:
+        pipeline_string = fp.read()
+    lines = []
+    for line in pipeline_string.split("\n"):
+        raw = line.strip()
+        content = raw.split("#", 1)[0]
+        if content.strip():
+            lines.append(content)
+    pipeline_string = "\n".join(lines)
+    try:
+        formatted_pipeline = pipeline_string.format_map(pipeline_kwargs)
+    except KeyError as exc:
+        print(f"ERROR: Cannot load pipeline from {real}. Reason: {repr(exc)}", file=sys.stderr)
+        raise
+
+    return formatted_pipeline
+
+def main(*args):
+    return print(pipe_from_file(*args))
+
+if __name__ == "__main__":
+    main(*sys.argv[1:])

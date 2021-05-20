@@ -1,93 +1,83 @@
+############ FIRST SOURCE #############
+
 rtspsrc
   location=rtsp://admin:admin.1234@10.100.10.77:554/cam/realmonitor?channel=1&subtype=1
-  name=src0
-! decodebin
+! rtph265depay 
+! h265parse 
 ! queue
+! avdec_h265
+! nvvideoconvert
+! video/x-raw(memory:NVMM),format=NV12
 ! muxer.sink_0
 
-rtspsrc
+# #######################################
+
+# ############ SECOND SOURCE ############
+
+rtspsrc 
   location=rtsp://admin:admin.1234@10.100.10.78:554/cam/realmonitor?channel=1&subtype=1
-  name=src1
-! decodebin
+! rtph265depay 
+! h265parse 
 ! queue
+! avdec_h265
+! nvvideoconvert
+! video/x-raw(memory:NVMM),format=NV12
 ! muxer.sink_1
 
+#######################################
 
+############ INFERENCE ################
 
 nvstreammux
-  name=muxer
-  width=704
-  height=480
-  batch-size=2
-  batched-push-timeout=33333
-  live-source=true
+    name=muxer
+    width=704
+    height=480
+    batch-size=2
+    batched-push-timeout=33333
+    live-source=true
+    nvbuf-memory-type=0
 ! nvinfer
-  config-file-path=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/nvdsanalytics_pgie_config.txt
-  batch-size=2
+    config-file-path=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/nvdsanalytics_pgie_config.txt
+    batch-size=2
 ! nvtracker
-  ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvdcf.so
-  ll-config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/tracker_config.yml
-  tracker-width=640
-  tracker-height=384
+    ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvdcf.so
+    ll-config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/tracker_config.yml
+    tracker-width=640
+    tracker-height=384
 ! nvdsanalytics
-  config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/config_nvdsanalytics.txt
-  name=analytics
-! video/x-raw(memory:NVMM), format=NV12
-! tee
-  name=analytics_tee
-
-
-
-
-
+    config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/config_nvdsanalytics.txt
+    name=analytics
+! tee name=analytics_tee
 
 analytics_tee.
 ! queue
 ! nvmultistreamtiler
-  name=tiler
-  width=704
-  height=480
-  show-source=-1
+    name=tiler
+    width=704
+    height=480
+    show-source=-1
 ! nvvideoconvert
 ! nvdsosd
 ! tee name=osd_tee
 
-
-
-# TODO: remove this section
-# osd_tee.
-# ! nvvideoconvert
-# ! nvv4l2h264enc
-# ! h264parse
-# ! qtmux
-# ! filesink
-#   location=/videos/out_tiled.mp4
-#   name=filesink_tee
-###
-
-
-
-# TODO: re-enable this section
-# osd_tee.
-# ! queue
-# ! nvvideoconvert
-# ! videoconvert
-# ! timeoverlay
-#   halignment=right
-#   valignment=bottom
-#   text="Current time:"
-#   shaded-background=true
-#   font-desc="Sans, 24" 
-# ! clockoverlay
-#   halignment=right
-#   valignment=center
-#   text="Stream time:"
-#   shaded-background=true
-#   font-desc="Sans, 24" 
-# ! fpsdisplaysink
-#   video-sink=nveglglessink
-
-# endsection
+osd_tee.
+! queue
+! nvvideoconvert
+! videoconvert
+! timeoverlay
+  halignment=right
+  valignment=bottom
+  text="Current time:"
+  shaded-background=true
+  font-desc="Sans, 24" 
+! clockoverlay
+  halignment=right
+  valignment=center
+  text="Stream time:"
+  shaded-background=true
+  font-desc="Sans, 24" 
+! fpsdisplaysink
+  video-sink=nveglglessink
 
 osd_tee.
 ! queue
@@ -101,26 +91,32 @@ osd_tee.
 ! queue
 ! fakesink
 
-
-
-
 analytics_tee.
 ! queue
 ! nvstreamdemux
-  name=demux
-
-
+    name=demux
 
 demux.src_0
-! video/x-raw(memory:NVMM), format=NV12
-! appsink
-  name=appsink_0
-  emit-signals=true
-  async=false
+! decodebin
+! videoconvert
+! nvvideoconvert
+! queue
+! vp8enc
+  deadline=1
+! webmmux
+! filesink
+  location=/videos/video_0.webm
+  name=filesink_0
+
 
 demux.src_1
-! video/x-raw(memory:NVMM), format=NV12
-! appsink
-  name=appsink_1
-  emit-signals=true
-  async=false
+! decodebin
+! videoconvert
+! nvvideoconvert
+! queue
+! vp8enc
+  deadline=1
+! webmmux
+! filesink
+  location=/videos/video_1.webm
+  name=filesink_1

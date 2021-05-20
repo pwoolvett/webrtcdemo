@@ -1,26 +1,44 @@
 #!/usr/bin/env bash
 
-set -e
+#region bash setup
+  set -e
 
-# keep track of the last executed command
-trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-# echo an error message before exiting
-trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
+  # keep track of the last executed command
+  trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+  # echo an error message before exiting
+  trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
-set -ux
+  set -ux
 
-export DISPLAY=:0
+#endregion
 
-xhost + 
+#region experiment cleanup
 
-sudo rm -rf ./debug/dots/*.dot
-sudo rm -rf ./debug/dots/*.png
+  sudo rm -rf ./debug/dots/
+  mkdir -p ./debug/dots/
 
-docker-compose kill
-docker-compose down --remove-orphans
-docker-compose build \
+  sudo rm -rf ./debug/videos/
+  mkdir -p ./debug/videos/
+
+#endregion
+
+#region X server setup
+  export DISPLAY=:0
+  xhost + 
+#endregion
+
+#region clean & re-run compose appliaction
+  docker-compose kill
+  docker-compose down --remove-orphans
+  docker-compose build \
     && clear \
-    && docker-compose up
+    && docker-compose up \
+      --abort-on-container-exit
 
-./manage/dots
+#endregion
 
+#region convert dot to png
+
+  ./manage/dots
+
+#endregion

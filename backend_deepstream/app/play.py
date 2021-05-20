@@ -16,6 +16,8 @@ from app.webrtc_client import WebRTCClient
 from app.recorder import MultiVideoRecorder
 from app.utils.utils import get_by_name_or_raise
 from app.utils.utils import pipe_from_file
+from app.utils.utils import datetime
+from app.utils.utils import _to_dot
 
 from logger import logger
 
@@ -51,6 +53,18 @@ class Ventanas(Standalone):
         result = self.tiler.set_property("show-source", camera_id)
         return {"status": "OK", "result": str(result)}
 
+    def dump_dot(self):
+        name=str(datetime.datetime.now()).replace(":", "_")
+        _to_dot(name, self.pipeline)
+        return name
+
+    def on_eos(self, bus, message):
+        print("Gstreamer: End-of-stream")
+        self.join()
+
+    def on_error(self, bus, message):
+        err, debug = message.parse_error()
+        print("Gstreamer: %s: %s" % (err, debug))
 
 mem = _build_meta_map(
     "analytics",
@@ -74,28 +88,34 @@ gstreamer_webrtc_client = WebRTCClient(
     pipeline=application.pipeline,
     connection_endpoint="connection",
 )
+# gstreamer_webrtc_client = None
 
-
-application(control_logs=False)
-
-# TODO: this must be performed after application runs because we need application.cameras
-# maybe we could use a gsttreamer probe instead
-for j in range(5):
-    cams = application.cameras
-    logger.info(f"cams={cams}")
-    if cams:
-        break
-    from time import sleep;sleep(1)
-else:
-    raise RuntimeError("no cameras found")
-
-video_recorder = MultiVideoRecorder(
-    range(len(application.cameras)),  # TODO ensure videorecorders are synchronixed with mux.sink_{source_id}
-    pipeline=application.pipeline,
-    fps=30,
-    window_size=2,
-    sink_location_prefix="/videos/event_"
+application(
+    control_logs=False
 )
+
+
+# # TODO: this must be performed after application runs because we need application.cameras
+# # maybe we could use a gsttreamer probe instead
+# for j in range(5):
+#     cams = application.cameras
+#     logger.info(f"cams={cams}")
+#     if cams:
+#         break
+#     from time import sleep;sleep(1)
+# else:
+#     raise RuntimeError("no cameras found")
+
+video_recorder = None
+
+# video_recorder = MultiVideoRecorder(
+#     range(len(application.cameras)),  # TODO ensure videorecorders are synchronixed with mux.sink_{source_id}
+#     pipeline=application.pipeline,
+#     fps=30,
+#     window_size=2,
+#     sink_location_prefix="/videos/event_"
+# )
 
 # extractor, consumer = mem["analytics"]
 # consumer.set_video_recorder(video_recorder)
+# video_recorder = None

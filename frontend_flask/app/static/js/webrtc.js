@@ -40,7 +40,7 @@ var peer_connection;
 var send_channel;
 var ws_conn;
 // Promise for local stream after constraints are approved by the user
-var local_stream_promise;
+// var local_stream_promise;
 
 function getOurId() {
     return Math.floor(Math.random() * (9000 - 10) + 10).toString();
@@ -77,12 +77,12 @@ function setError(text) {
 
 function resetVideo() {
     // Release the webcam and mic
-    if (local_stream_promise)
-        local_stream_promise.then(stream => {
-            if (stream) {
-                stream.getTracks().forEach(function (track) { track.stop(); });
-            }
-        });
+    // if (local_stream_promise)
+    //     local_stream_promise.then(stream => {
+    //         if (stream) {
+    //             stream.getTracks().forEach(function (track) { track.stop(); });
+    //         }
+    //     });
 
     // Reset the video element and stop showing the last received frame
     var videoElement = getVideoElement();
@@ -98,11 +98,12 @@ function onIncomingSDP(sdp) {
         if (sdp.type != "offer")
             return;
         setStatus("Got SDP offer");
-        local_stream_promise.then((stream) => {
-            setStatus("Got local stream, creating answer");
-            peer_connection.createAnswer()
-            .then(onLocalDescription).catch(setError);
-        }).catch(setError);
+        peer_connection.createAnswer().then(onLocalDescription).catch(setError);
+    //     local_stream_promise.then((stream) => {
+    //         setStatus("Got local stream, creating answer");
+    //         peer_connection.createAnswer()
+    //         .then(onLocalDescription).catch(setError);
+    //     }).catch(setError);
     }).catch(setError);
 }
 
@@ -322,11 +323,11 @@ function createCall(msg) {
     peer_connection.ondatachannel = onDataChannel;
     peer_connection.ontrack = onRemoteTrack;
     /* Send our video/audio to the other peer */
-    local_stream_promise = getLocalStream().then((stream) => {
-        console.log('Adding local stream');
-        peer_connection.addStream(stream);
-        return stream;
-    }).catch(setError);
+    // local_stream_promise = getLocalStream().then((stream) => {
+    //     console.log('Adding local stream');
+    //     peer_connection.addStream(stream);
+    //     return stream;
+    // }).catch(setError);
 
     if (msg != null && !msg.sdp) {
         console.log("WARNING: First message wasn't an SDP message!?");
@@ -345,7 +346,8 @@ function createCall(msg) {
     if (msg != null)
         setStatus("Created peer connection for call, waiting for SDP");
 
-    return local_stream_promise;
+    return ;
+    // return local_stream_promise;
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 

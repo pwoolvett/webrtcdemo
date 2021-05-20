@@ -73,7 +73,20 @@ def start_streaming(peer_id):
     return {"ERROR_TYPE": "MULTIPLE ERRORS", "ERROR": errs}
 
 
+@traced(logger.info)
+@video_endpoint.route("/dump_dot", methods=["GET"])
+def dump_dot():
+    path = application.dump_dot()
+    return {"staus": "OK", "path": path}
 
+@traced(logger.info)
+@video_endpoint.route("/send_eos", methods=["GET"])
+def send_eos():
+    from gi.repository import Gst
+    response = application.pipeline.send_event(
+        Gst.Event.new_eos()
+    )
+    return {"staus": "OK", "response": str(response)}
 
 
 if __name__ == "__main__":
