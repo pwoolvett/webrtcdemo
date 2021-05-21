@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "ms-toolsai.jupyter",
-        "ms-python.python"
+        "ms-python.python",
+        "p1c2u.docker-compose"
     ]
 }
