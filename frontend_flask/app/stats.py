@@ -1,19 +1,24 @@
 import cv2
 import numpy as np
 import pandas as pd
+import requests
+import time
+import logging
+
 from contextlib import contextmanager
-from typing import ContextManager, Tuple
+from typing import Tuple
 from datetime import datetime
-from os import stat
 
 from app import app
-
-from app.utils.heatmap import GPUMotionHeatmap
 
 from app.models import Detection
 from app.models import Event
 from app.models import Frame
 from app.models import get_session
+
+from app.utils.heatmap import GPUMotionHeatmap
+from app.utils.logger import logger
+
 
 Session = get_session("sqlite:////db/test.db")
 
@@ -34,7 +39,8 @@ class EventStatistics:
         start_datetime: datetime,
         end_datetime: datetime,
         camera_id: int,
-        db_session,
+        db_session_constructor, 
+        **kwargs
     ):
         """Initialize an EventStatistics instance.
 
@@ -42,23 +48,26 @@ class EventStatistics:
             start_datetime (datetime): Start date and time for query.
             end_datetime (datetime): End date and time for query
             camera_id (int): Selected camera to review.
-            db_session (int): Database session constructor.
+            db_session_constructor (int): Database session constructor.
         """
+        self.logger = logger
         self.base_image = BASE_IMAGES[camera_id]
-        self.Session = Session
+        self.logger.info(f"Using database constructor: {db_session_constructor}")
+        self.Session = db_session_constructor
         self.images_path = app.config["RESOURCES_PATH"] / "images"
         self.videos_path = app.config["SAVED_VIDEOS_PATH"]
+        self.heatmap_endpoint = app.config["HEATMAP_ENDPOINT"]
         self.events, self.detections = self.get_values(
             start_datetime, end_datetime, camera_id
         )
 
     @classmethod
-    def build_from_form(cls, form, db_session):
+    def build_from_form(cls, form, db_session_constructor):
         kwargs = dict(
             start_datetime=datetime.combine(form.date_from.data, form.time_from.data),
             end_datetime=datetime.combine(form.date_to.data, form.time_to.data),
             camera_id=int(form.camera_id.data),
-            db_session=db_session,
+            db_session_constructor=db_session_constructor,
         )
         return cls(**kwargs)
 
@@ -118,6 +127,28 @@ class EventStatistics:
             "statistics": self.build_main_statistics(),
         }
 
+    def request_heatmaps(self, event_list:list)->bool:
+        try:
+            heatmap_requests = [requests.get(self.heatmap_endpoint, params={'event_id': event_id}, verify="/certs/cert.pem") for event_id in event_list]
+            heatmaps_status = [ request.json()['STATUS'] for request in heatmap_requests]    
+        except Exception as e:
+            print("ERROR COMPUTING HEATMAPS", e)
+            return 
+        return all(status in ["Already computed", "Failed computation"] for status in heatmaps_status)
+
+    def aggregate_heatmap_values(self, events_id_list:list)->np.ndarray:
+        with self.query_session() as session:
+            query_result = (
+                session.query(Event.motion_heatmap_path)
+                .filter(Event.id.in_(events_id_list))).all()
+        heatmap_paths = [value[0] for value in query_result]
+        heatmap = np.zeros_like(np.load(heatmap_paths[0]))
+        for heatmap_path in heatmap_paths:
+            heatmap_values = np.load(heatmap_path)
+            heatmap += heatmap_values
+        return heatmap
+
+
     def compute_heatmap_values(
         self,
     ):
@@ -126,20 +157,15 @@ class EventStatistics:
         Returns:
             np.array: Overlayed image.
         """
-        import time
-
-        results = []
         t0 = time.perf_counter()
-
-        grouped = [*self.group_events()]
-        for video_path, detection in grouped:
-            if detection is None:
-                print(f"SKIPPING {video_path} - REASON: detection is `None`")
-                continue
-            experiment_actor = self.compute_heatmap.remote(detection, video_path)
-            results.append(experiment_actor)
-        print(f"Heatmap computation time for {len(grouped)} events: {time.perf_counter()-t0:.3f} s")
-        return results
+        event_id_list = self.events['id'].to_list()
+        heatmaps_computed = self.request_heatmaps(event_id_list)
+        while not heatmaps_computed:
+            time.sleep(2)
+            heatmaps_computed = self.request_heatmaps(event_id_list)
+        heatmap_values = self.aggregate_heatmap_values(event_id_list)
+        self.logger.info(f"Heatmap computation time for {len(event_id_list)} events: {time.perf_counter()-t0:.3f} s")
+        return heatmap_values
 
     def display_heatmap(self, frame:np.ndarray):
         color_image = cv2.applyColorMap(
@@ -213,11 +239,10 @@ class EventStatistics:
     ):
         descriptive_statistics = self.get_statistics()
         heatmap_values = self.compute_heatmap_values()
-        if not heatmap_values:
+        if heatmap_values is None:
             heatmap_location = str(app.config["RESOURCES_PATH"] / "images" / "base_image.png")
         else:
-            frame = sum(heatmap_values)  # TODO ponderar
-            heatmap_location = self.display_heatmap(frame)
+            heatmap_location = self.display_heatmap(heatmap_values)
         return dict(
             heatmap=heatmap_location,
             event_count=descriptive_statistics["event_count"],

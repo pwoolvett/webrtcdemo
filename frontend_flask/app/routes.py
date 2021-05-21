@@ -2,8 +2,6 @@ import flask
 from flask import render_template
 from flask import request
 
-import requests
-
 from app import app
 from app.forms import TimeFilterForm
 from app.models import get_session
@@ -12,8 +10,6 @@ from app.registry import RegistryStatistics
 
 
 DBSession = get_session(app.config["SQLALCHEMY_DATABASE_URI"])
-# DBSession = get_session("sqlite:////home/rmclabs/RMCLabs/webrtcdemo/db/test.db")
-
 
 @app.route("/")
 def index():
@@ -33,7 +29,7 @@ def registry():
         return render_template("registry.jinja", form=form)
     else:
         if form.validate_on_submit():
-            events = RegistryStatistics.build_from_form(form, DBSession)
+            events = RegistryStatistics.build_from_form(form, db_session_constructor=DBSession)
             rendered=events()
             print(f"Found {len(rendered)} events")
             return render_template("registry.jinja", events=rendered, form=form)
@@ -49,8 +45,9 @@ def stats():
         return render_template("stats.jinja", form=form)
     else:
         if form.validate_on_submit():
-            stats = EventStatistics.build_from_form(form, DBSession)
+            stats = EventStatistics.build_from_form(form, db_session_constructor=DBSession)
             rendered=stats()
+            # rendered = 
             return render_template("stats.jinja", results=rendered, form=form)
         else:
             raise ValueError  # TODO: 404

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import numpy as np
+import os
 
+import numpy as np
 import ray
 from ray import serve
 
@@ -11,10 +12,10 @@ from app.utils.metadata import EventMetaData
 from app.utils.heatmap import GPUMotionHeatmap
 from app.utils.heatmap import CPUMotionHeatmap
 
-client = serve.start(http_host="0.0.0.0", http_port=3333)
+client = serve.start(http_host="0.0.0.0", http_port=os.environ["RAY_SERVE_PORT"])
 
 
-@serve.deployment(route_prefix="/heatmap")
+@serve.deployment(route_prefix="/")
 class MotionHeatmap:
     def __init__(self):
         self.count = 0
