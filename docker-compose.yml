@@ -59,6 +59,7 @@ services:
     environment:
       - DISPLAY=:0
       - PYTHONUNBUFFERED=1
+      - RAY_SERVE_PORT=8004
     depends_on:
       - signalling
 
