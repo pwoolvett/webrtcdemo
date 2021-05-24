@@ -33,6 +33,7 @@ services:
       - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
       - ./signalling/cert.pem:/certs/cert.pem
       - ./signalling/key.pem:/certs/key.pem
+      - $CAMERAS_LOCAL_PATH:$CAMERAS_REMOTE_PATH
     network_mode: "host"
     runtime: nvidia
     restart: always
@@ -42,7 +43,9 @@ services:
       - FLASK_RUN_PORT=7001
       - CERTS_PATH=/certs/
       - SIGNALLING_SERVER=wss://0.0.0.0:9999/signalling
- 
+    env_file:
+      - .env
+      - backend_deepstream/.env
 
   motion-heatmap:
     image: rmclabs-io/motion-heatmap
@@ -76,6 +79,7 @@ services:
       - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
       - ./signalling/cert.pem:/certs/cert.pem
       - ./signalling/key.pem:/certs/key.pem
+      - $CAMERAS_LOCAL_PATH:$CAMERAS_REMOTE_PATH
     depends_on:
       - nginx
       - signalling
@@ -84,3 +88,5 @@ services:
       - FLASK_RUN_HOST=0.0.0.0
       - FLASK_RUN_PORT=7002
       - CERTS_PATH=/certs/
+    env_file:
+      - .env

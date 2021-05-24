@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 
 import gi
@@ -10,7 +11,12 @@ from gi.repository import Gst
 from pythiags.headless import Standalone
 from pythiags.headless import GObject
 from pythiags.cli import _build_meta_map
-from pythiags.cli import pipe_from_file
+
+from app import CAMERAS
+from app import MULTISTREAMTILER_HEIGHT
+from app import MULTISTREAMTILER_WIDTH
+from app import SIGNALING_SERVER
+from app import VIDEO_STORAGE
 
 from app.webrtc_client import WebRTCClient
 from app.recorder import MultiVideoRecorder
@@ -26,6 +32,8 @@ class Ventanas(Standalone):
         # TODO: ver como matar
         self.loop = GObject.MainLoop()
         self.pipeline.set_state(Gst.State.PLAYING)
+        # TODO WE SHOUD RUN THIS SOMEWHERE SO WE CAN KILL THE APPLICATION IF GSTREAM<ER GOES DOWN
+        # TOGHETHER WITH THE bus_call & friends
         # try:
         #     self.loop.run()
         # except Exception as exc:
@@ -45,9 +53,21 @@ class Ventanas(Standalone):
 
     @property
     def cameras(self):
-        return [
-            str(pad) for pad in self.muxer.pads if "sink" in str(pad.direction).lower()
-        ]
+        available_cameras = {}
+        muxer_pads = {
+            int(camera_id.name.lstrip("sink_"))
+            for camera_id in self.muxer.pads
+            if "sink" in str(camera_id.direction).lower()
+        }
+
+        for camera_id, camera in CAMERAS.items():
+            if int(camera_id) not in muxer_pads:
+                logger.warning(f"Camera {camera_id} could not be retrieved. Please check its connection")
+                continue
+            available_cameras[camera_id] = camera
+        logger.info(f"Available cameras: {available_cameras}")
+        return available_cameras
+        
 
     def focus_camera(self, camera_id):  # TODO: handle wrong number
         result = self.tiler.set_property("show-source", camera_id)
@@ -72,23 +92,28 @@ mem = _build_meta_map(
     "app.consumer:DDBBWriter",
 )
 
-pipeline_str = pipe_from_file("app/pipeline.gstp")
+
+pipeline_str = pipe_from_file(
+    "app/pipeline.gstp.jinja",
+    cameras=CAMERAS,
+    multistreamtiler_width=MULTISTREAMTILER_HEIGHT,
+    multistreamtiler_height=MULTISTREAMTILER_WIDTH,
+    
+)
 logger.debug(pipeline_str)
 
 application = Ventanas(
     pipeline_str,
-    None,  # mem
+    mem
 )
 
 gstreamer_webrtc_client = WebRTCClient(
     id_=105,
-    # peer_id=1,
-    server=os.environ["SIGNALLING_SERVER"], # websocket uri  TODO: with net=host in docker-compose this wont work
-    # server="wss://localhost:7003", # websocket uri
+    server=SIGNALING_SERVER,
     pipeline=application.pipeline,
     connection_endpoint="connection",
 )
-# gstreamer_webrtc_client = None
+
 
 application(
     control_logs=False
@@ -106,16 +131,14 @@ for j in range(5):
 else:
     raise RuntimeError("no cameras found")
 
-video_recorder = None
 
 video_recorder = MultiVideoRecorder(
-    range(len(application.cameras)),  # TODO ensure videorecorders are synchronixed with mux.sink_{source_id}
+    application.cameras,
     pipeline=application.pipeline,
     fps=30,
     window_size=2,
-    sink_location_prefix="/videos/event_"
+    sink_location_prefix=str(Path(VIDEO_STORAGE)/"event_")
 )
 
-# extractor, consumer = mem["analytics"]
-# consumer.set_video_recorder(video_recorder)
-# video_recorder = None
+extractor, consumer = mem["analytics"]
+consumer.set_video_recorder(video_recorder)  # TODO: monkey banana solve this

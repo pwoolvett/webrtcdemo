@@ -10,6 +10,9 @@ from flask.logging import default_handler
 
 from logger import logger
 
+from app import CERTS_PATH
+from app import FLASK_RUN_PORT
+from app import FLASK_RUN_HOST
 from app.play import gstreamer_webrtc_client
 from app.play import video_recorder
 from app.play import application
@@ -90,11 +93,12 @@ def send_eos():
 
 
 if __name__ == "__main__":
-    certs_path = Path(os.environ["CERTS_PATH"])
+    certs_path = Path(CERTS_PATH)
     video_endpoint.run(
         debug=False,
-        host=os.environ["FLASK_RUN_HOST"],
-        port=os.environ["FLASK_RUN_PORT"],
+        host=FLASK_RUN_HOST,
+        port=FLASK_RUN_PORT,
         threaded=False,
         ssl_context=(str(certs_path / "cert.pem"), str(certs_path / "key.pem")),
+        load_dotenv=False
     )

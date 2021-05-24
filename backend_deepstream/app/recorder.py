@@ -483,9 +483,9 @@ class MultiVideoRecorder:
         
         sink_location_prefix = recorder_kw.pop("sink_location_prefix")
         self.recorders = {}
-        for camera in cameras:
-            self.recorders[camera] = VideoRecorder(
-                appsink_name=f"{appsink_fmt}{camera}",
+        for pad_number, camera in cameras.items():
+            self.recorders[pad_number] = VideoRecorder(
+                appsink_name=f"{appsink_fmt}{pad_number}",
                 sink_location_prefix=f"{sink_location_prefix}{camera}_",
                 **recorder_kw
             )
