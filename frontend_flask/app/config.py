@@ -12,4 +12,4 @@ class Config:
     # TODO Implement cameras mapping
     RESOURCES_PATH = (Path(__file__).parent / "static").resolve()
     SAVED_VIDEOS_PATH = Path("/videos").resolve()  # FIXME Set definitve video location
-    HEATMAP_ENDPOINT = "https://localhost:8888/heatmap"
+    HEATMAP_ENDPOINT = f"https://localhost:{os.environ['RAY_SERVE_PORT']}/heatmap"
