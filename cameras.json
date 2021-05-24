@@ -1,0 +1,19 @@
+{
+    "0":{
+        "name":"estacionamiento",
+        "ip_port": "10.100.10.77:554",
+        "user": "admin",
+        "password": "admin.1234",
+        "width": 704,
+        "height": 480
+    },
+    "1":{
+        "name":"laboratorio",
+        "pad_number": 1,
+        "ip_port": "10.100.10.78:554",
+        "user": "admin",
+        "password": "admin.1234",
+        "width": 704,
+        "height": 480
+    }
+}

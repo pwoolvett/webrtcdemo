@@ -1,4 +1,5 @@
-SQLAlchemy==1.4.7
 Flask==1.1.2
+Jinja2==3.0.0
 pythiags[gpu,ds,cli]==0.10.0
+SQLAlchemy==1.4.7
 websockets==8.1

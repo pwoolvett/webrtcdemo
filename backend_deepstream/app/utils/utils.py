@@ -7,16 +7,13 @@ from uuid import uuid4
 import abc
 from time import sleep
 from pathlib import Path
-
 from typing import Optional
 from typing import Union
 
-
-
 import gi
-
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst
+from jinja2 import Template
 
 from logger import logger
 
@@ -200,6 +197,27 @@ def pipe_from_file(
     pipeline_string = "\n".join(lines)
     try:
         formatted_pipeline = pipeline_string.format_map(pipeline_kwargs)
+    except KeyError as exc:
+        logger.error(f"PythiaGsApp: Cannot run {real}. Reason: {repr(exc)}")
+        raise
+
+    return formatted_pipeline
+
+def pipe_from_file(
+    path: Union[str, Path],
+    **context
+) -> str:
+    logger.info(f"Loading pipeline from {path} using jinja backend")
+
+    real = Path(path).resolve()
+    with open(real) as fp:
+        pipeline_string = fp.read()
+
+
+
+    template = Template(pipeline_string)
+    try:
+        formatted_pipeline = template.render(**context)
     except KeyError as exc:
         logger.error(f"PythiaGsApp: Cannot run {real}. Reason: {repr(exc)}")
         raise
