@@ -1,0 +1,111 @@
+rtspsrc
+  location=rtsp://admin:admin.1234@10.100.10.77:554/cam/realmonitor?channel=1&subtype=1
+  name=src0
+! decodebin
+! queue
+! muxer.sink_0
+
+rtspsrc
+  location=rtsp://admin:admin.1234@10.100.10.78:554/cam/realmonitor?channel=1&subtype=1
+  name=src1
+! decodebin
+! queue
+! muxer.sink_1
+
+
+
+nvstreammux
+  name=muxer
+  width=704
+  height=480
+  batch-size=2
+  batched-push-timeout=33333
+  live-source=true
+! nvinfer
+  config-file-path=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/nvdsanalytics_pgie_config.txt
+  batch-size=2
+! nvtracker
+  ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvdcf.so
+  ll-config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/tracker_config.yml
+  tracker-width=640
+  tracker-height=384
+! nvdsanalytics
+  config-file=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-nvdsanalytics-test/config_nvdsanalytics.txt
+  name=analytics
+! video/x-raw(memory:NVMM), format=NV12
+! tee
+  name=analytics_tee
+
+
+
+
+
+
+analytics_tee.
+! queue
+! nvmultistreamtiler
+  name=tiler
+  width=704
+  height=480
+! nvvideoconvert
+! nvdsosd
+! tee name=osd_tee
+
+
+
+# TODO: remove this section
+# osd_tee.
+# ! nvvideoconvert
+# ! nvv4l2h264enc
+# ! h264parse
+# ! qtmux
+# ! filesink
+#   location=/videos/out_tiled.mp4
+#   name=filesink_tee
+###
+
+osd_tee.
+! queue
+! nvvideoconvert
+! decodebin
+! nvvideoconvert
+! videoconvert
+! video/x-raw,format=I420
+! tee
+  name=connection
+! queue
+! fakesink
+
+
+
+
+analytics_tee.
+! queue
+! nvstreamdemux
+  name=demux
+
+
+
+demux.src_0
+! video/x-raw(memory:NVMM), format=NV12
+! queue
+! nvvideoconvert
+! nvv4l2h264enc
+! h264parse
+! qtmux
+! filesink
+  location=/videos/out_0.mp4
+  name=filesink_0
+
+
+
+demux.src_1
+! video/x-raw(memory:NVMM), format=NV12
+! queue
+! nvvideoconvert
+! nvv4l2h264enc
+! h264parse
+! qtmux
+! filesink
+  location=/videos/out_1.mp4
+  name=filesink_1

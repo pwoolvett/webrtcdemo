@@ -1,25 +1,92 @@
 version: '3'
 
+
 services:
 
-  sendrecv-gst:
-    build: ./sendrecv/gst
+  nginx:
+    image: nginx:latest
+    network_mode: "host"
+    volumes:
+      - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf 
+      - ./signalling/cert.pem:/certs/cert.pem
+      - ./signalling/key.pem:/certs/key.pem
 
-  # sendrecv-js:
-  #   build: ./sendrecv/js
-  #   ports:
-  #     - 8080:80
-  #   depends_on:
-  #     - signalling
+  signalling:
+    image: rmclabs-io/ventanas-signalling
+    build: ./signalling
+    network_mode: "host"
+    depends_on:
+      - nginx
+    environment:
+      - SIGNALLING_HOST=0.0.0.0
+      - SIGNALLING_PORT=7003
+    
 
-  front:
-    build: ./sendrecv/front
-    ports:
-      - 8080:80
+  backend:
+    image: rmclabs-io/ventanas-backend_deepstream
+    build:
+      context: .
+      dockerfile: backend_deepstream/Dockerfile
+    volumes:
+      - $DB_LOCAL_PATH:$DB_REMOTE_PATH
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
+      - ./signalling/cert.pem:/certs/cert.pem
+      - ./signalling/key.pem:/certs/key.pem
+      - $CAMERAS_LOCAL_PATH:$CAMERAS_REMOTE_PATH
+    network_mode: "host"
+    runtime: nvidia
+    restart: always
+    environment:
+      - DISPLAY=:0 
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=7001
+      - CERTS_PATH=/certs/
+      - SIGNALLING_SERVER=wss://0.0.0.0:9999/signalling
+    env_file:
+      - .env
+      - backend_deepstream/.env
+
+  motion-heatmap:
+    image: rmclabs-io/motion-heatmap
+    build:
+      context: .
+      dockerfile: motion/Dockerfile
+    volumes:
+      - /home/rmclabs/RMCLabs/webrtcdemo/motion:/motion
+      - $DB_LOCAL_PATH:$DB_REMOTE_PATH
+      - $HEATMAP_LOCAL_PATH:$HEATMAP_REMOTE_PATH
+      - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
+    network_mode: "host"
+    runtime: nvidia
+    restart: always
+    environment:
+      - DISPLAY=:0
+      - PYTHONUNBUFFERED=1
+      - RAY_SERVE_PORT=8004
     depends_on:
       - signalling
 
-  signalling:
-    build: ./signalling
-    ports:
-      - 8443:8443
+  frontend:
+    image: rmclabs-io/ventanas-app_flask
+    build:
+      context: .
+      dockerfile: frontend_flask/Dockerfile
+    network_mode: "host"
+    runtime: nvidia
+    volumes:
+      - $DB_LOCAL_PATH:$DB_REMOTE_PATH
+      - $VIDEO_LOCAL_PATH:$VIDEO_REMOTE_PATH
+      - ./signalling/cert.pem:/certs/cert.pem
+      - ./signalling/key.pem:/certs/key.pem
+      - $CAMERAS_LOCAL_PATH:$CAMERAS_REMOTE_PATH
+    depends_on:
+      - nginx
+      - signalling
+      - backend
+    environment:
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=7002
+      - CERTS_PATH=/certs/
+    env_file:
+      - .env

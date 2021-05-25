@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+sudo chown -R $USER:$USER ./debug/dots/
+
+find \
+  ./debug/dots/ \
+  -iname *.dot \
+  -exec \
+    dot -Tpng {} -o {}.png \;
